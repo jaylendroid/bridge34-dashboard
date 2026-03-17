@@ -203,6 +203,60 @@
     .cat-discussion { background: #2a2a1a; color: #cccc66; }
     .cat-hold       { background: #2a1a1a; color: #cc6666; }
 
+    /* ── Events ── */
+    .events-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .events-panel {
+      background: #14142a;
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+    .events-header {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6666aa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+    .event-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #1a1a2e;
+    }
+    .event-item:last-child { border-bottom: none; }
+    .event-time {
+      font-size: 0.82rem;
+      color: #ff6633;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 42px;
+      padding-top: 1px;
+    }
+    .event-time.allday { color: #5555aa; }
+    .event-title {
+      font-size: 0.92rem;
+      color: #e0e0f0;
+      flex: 1;
+      line-height: 1.4;
+    }
+    .event-meet {
+      font-size: 0.75rem;
+      color: #4488ff;
+      text-decoration: none;
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+    .event-meet:hover { color: #88bbff; }
+    .event-empty { color: #333355; font-size: 0.85rem; padding: 10px 0; }
+    .event-loading { color: #333355; font-size: 0.85rem; padding: 10px 0; animation: pulse 2s infinite; }
+
     /* ── Sync bar ── */
     .sync-bar {
       position: fixed;
@@ -247,7 +301,19 @@
   </div>
 </div>
 
-<div class="scroll-hint">↓ 스크롤 — 전체 클라이언트 현황</div>
+<div class="scroll-hint">↓ 스크롤 — 일정 및 클라이언트 현황</div>
+
+<!-- EVENTS -->
+<div class="events-row">
+  <div class="events-panel">
+    <div class="events-header">📅 오늘 일정</div>
+    <div id="events-today"><div class="event-loading">불러오는 중...</div></div>
+  </div>
+  <div class="events-panel">
+    <div class="events-header">📅 내일 일정</div>
+    <div id="events-tomorrow"><div class="event-loading">불러오는 중...</div></div>
+  </div>
+</div>
 
 <!-- CLIENTS -->
 <div class="section-title">📊 전체 클라이언트 현황</div>
@@ -406,6 +472,32 @@ function setSyncStatus(msg, ok) {
   el.className = ok === true ? 'ok' : ok === false ? 'fail' : '';
 }
 
+// ── Render Events ──
+function renderEvents(data) {
+  if (!data) return;
+  renderEventList('events-today',    data.today    || []);
+  renderEventList('events-tomorrow', data.tomorrow || []);
+}
+
+function renderEventList(elId, events) {
+  const el = document.getElementById(elId);
+  if (!events.length) {
+    el.innerHTML = '<div class="event-empty">일정 없음</div>';
+    return;
+  }
+  el.innerHTML = events.map(ev => {
+    const timeClass = ev.allDay ? 'event-time allday' : 'event-time';
+    const meetHtml  = ev.meetLink
+      ? `<a class="event-meet" href="${ev.meetLink}" target="_blank">🔗 Meet</a>`
+      : '';
+    return `<div class="event-item">
+      <span class="${timeClass}">${ev.time}</span>
+      <span class="event-title">${ev.title}</span>
+      ${meetHtml}
+    </div>`;
+  }).join('');
+}
+
 // ── Load & Auto-refresh ──
 function loadAll() {
   google.script.run
@@ -416,6 +508,10 @@ function loadAll() {
     .withSuccessHandler(renderClients)
     .withFailureHandler(() => {})
     .getClients();
+  google.script.run
+    .withSuccessHandler(renderEvents)
+    .withFailureHandler(() => {})
+    .getEvents();
 }
 
 loadAll();
