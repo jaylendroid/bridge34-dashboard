@@ -73,10 +73,15 @@
       padding: 1px 7px;
     }
 
-    .card-list { min-height: 180px; }
+    .card-list {
+      min-height: 180px;
+      position: relative; /* for delete button positioning */
+    }
 
     .card {
       background: #1e1e36;
+      position: relative; /* for delete button positioning */
+
       border-radius: 12px;
       padding: 14px 16px;
       margin-bottom: 10px;
@@ -117,6 +122,35 @@
     .badge-due      { background: #2e1a1a; color: #cc8877; }
     .badge-high     { background: #3a1010; color: #ff5555; }
     .badge-mid      { background: #2a2a10; color: #bbbb44; }
+
+    /* ── Delete Button ── */
+    .card-delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 85, 85, 0.8);
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s, background 0.2s;
+      z-index: 10;
+    }
+    .card:hover .card-delete {
+      opacity: 1;
+    }
+    .card-delete:hover {
+      background: rgba(255, 85, 85, 1);
+      transform: scale(1.1);
+    }
 
     .empty-col {
       color: #333355;
@@ -341,6 +375,32 @@ tick();
 function badge(cls, text) {
   return `<span class="badge ${cls}">${text}</span>`;
 }
+
+function formatTimeAMPM(timeStr) {
+  // "19:00" -> "7:00 PM" 형식으로 변환
+  if (!timeStr || timeStr === '종일') return timeStr;
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const m = parts[1];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function confirmDeleteTask(rowNum) {
+  if (confirm('이 태스크를 삭제하시겠습니까?')) {
+    setSyncStatus('삭제 중...', null);
+    google.script.run
+      .withSuccessHandler((tasks) => {
+        renderTasks(tasks);
+        setSyncStatus('삭제됨 ✓', true);
+      })
+      .withFailureHandler(() => setSyncStatus('삭제 실패 ⚠️', false))
+      .deleteTask(rowNum);
+  }
+}
 function priorityBadge(p) {
   if (!p) return '';
   const v = String(p).toLowerCase();
@@ -396,6 +456,7 @@ function renderCol(colId, items) {
     const prio     = priorityBadge(t['Priority']);
     return `
       <div class="card" data-row="${t._row}" data-status="${t['Status'] || 'To-Do'}">
+        <button class="card-delete" onclick="confirmDeleteTask(${t._row})">✕</button>
         <div class="card-title">${t['Task'] || ''}</div>
         <div class="card-meta">${client}${assignee}${due}${prio}</div>
       </div>`;
@@ -487,11 +548,12 @@ function renderEventList(elId, events) {
   }
   el.innerHTML = events.map(ev => {
     const timeClass = ev.allDay ? 'event-time allday' : 'event-time';
+    const displayTime = formatTimeAMPM(ev.time);
     const meetHtml  = ev.meetLink
       ? `<a class="event-meet" href="${ev.meetLink}" target="_blank">🔗 Meet</a>`
       : '';
     return `<div class="event-item">
-      <span class="${timeClass}">${ev.time}</span>
+      <span class="${timeClass}">${displayTime}</span>
       <span class="event-title">${ev.title}</span>
       ${meetHtml}
     </div>`;
