@@ -8,8 +8,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1067733286769-b6u3j8eeou74b1eg078qq8hhtohv72u6.apps.googleusercontent.com';
+    const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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';
     const REDIRECT_URI = 'https://bridge34-dashboard-duob.vercel.app/api/auth/callback';
 
     if (!CLIENT_ID || !CLIENT_SECRET) {
@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
       expires_in: tokenData.expires_in,
-      message: 'Save this access_token to GOOGLE_OAUTH_TOKEN environment variable in Vercel'
+      message: 'Copy the access_token above and add to GOOGLE_OAUTH_TOKEN environment variable in Vercel'
     });
   } catch (error) {
     console.error('OAuth callback error:', error);
