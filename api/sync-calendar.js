@@ -1,16 +1,14 @@
 // Vercel Serverless Function: Google Calendar → Supabase 동기화 (OAuth 사용)
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
-    // OAuth token이 필요한데, 지금은 환경변수나 DB에서 가져와야 함
-    // 임시로 GOOGLE_OAUTH_TOKEN 사용
     const OAUTH_TOKEN = process.env.GOOGLE_OAUTH_TOKEN;
     
     if (!OAUTH_TOKEN) {
       return res.status(401).json({
         success: false,
-        error: 'OAuth token not found. Please authenticate first.',
-        authUrl: 'https://bridge34-dashboard-duob.vercel.app/api/auth'
+        error: 'OAuth token not found',
+        message: 'Please authenticate first at /api/auth'
       });
     }
 
@@ -122,4 +120,4 @@ export default async function handler(req, res) {
       error: error.message
     });
   }
-}
+};

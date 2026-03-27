@@ -1,6 +1,6 @@
 // OAuth Callback - authorization code를 access token으로 교환
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { code } = req.query;
 
   if (!code) {
@@ -11,6 +11,10 @@ export default async function handler(req, res) {
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
     const REDIRECT_URI = 'https://bridge34-dashboard-duob.vercel.app/api/auth/callback';
+
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+      return res.status(500).json({ error: 'Google OAuth credentials not found' });
+    }
 
     // Authorization code를 access token으로 교환
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -31,19 +35,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Failed to get access token', details: tokenData });
     }
 
-    // Access token을 Supabase에 저장
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_KEY = process.env.SUPABASE_KEY;
-
-    // 간단한 저장소 (또는 DB에 저장 가능)
-    // 지금은 메모리에 저장하거나, 나중에 DB 추가
-    global.googleAccessToken = tokenData.access_token;
-    global.googleRefreshToken = tokenData.refresh_token;
-
-    // 성공 페이지로 리다이렉트
-    res.redirect('/');
+    // Access token 반환 (나중에 DB에 저장)
+    res.status(200).json({
+      success: true,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_in: tokenData.expires_in,
+      message: 'Save this access_token to GOOGLE_OAUTH_TOKEN environment variable in Vercel'
+    });
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({ error: 'Authentication failed', details: error.message });
   }
-}
+};
