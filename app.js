@@ -47,19 +47,6 @@ async function addTask(task) {
   return null;
 }
 
-async function updateTask(id, updates) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'apikey': SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(updates)
-  });
-  return response.json();
-}
-
 async function deleteTask(id) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
     method: 'DELETE',
@@ -92,19 +79,6 @@ async function addClient(client) {
   return null;
 }
 
-async function updateClient(id, updates) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/clients?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'apikey': SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(updates)
-  });
-  return response.json();
-}
-
 async function deleteClient(id) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/clients?id=eq.${id}`, {
     method: 'DELETE',
@@ -115,24 +89,6 @@ async function deleteClient(id) {
     }
   });
   return response.status === 204;
-}
-
-// Events (Calendar) 조회
-async function getEvents(filterDate = null) {
-  if (!filterDate) return [];
-  
-  const dateStr = filterDate.toISOString().split('T')[0];
-  const isToday = dateStr === new Date().toISOString().split('T')[0];
-  
-  if (isToday) {
-    // 오늘: 현재 시간부터
-    const now = new Date().toISOString();
-    return supabaseQuery('events', `start_time=gte.${now}&order=start_time.asc`);
-  } else {
-    // 내일 이후: 오전 11시부터
-    const timeStr = dateStr + 'T11:00:00';
-    return supabaseQuery('events', `start_time=gte.${timeStr}&order=start_time.asc`);
-  }
 }
 
 // 시계 업데이트
@@ -186,9 +142,6 @@ async function loadDashboard() {
     
     const clients = await getClients();
     renderClients(clients);
-    
-    const events = await getEvents(currentDate);
-    renderSchedules(events);
     
     updateClock();
   } catch (error) {
@@ -263,36 +216,6 @@ function renderClients(clients) {
     });
     
     clientsList.appendChild(row);
-  });
-}
-
-function renderSchedules(events) {
-  const schedulesList = document.querySelector('.schedules-list');
-  if (!schedulesList) return;
-  
-  if (events.length === 0) {
-    schedulesList.innerHTML = '<div class="schedule-empty">일정이 없습니다.</div>';
-    return;
-  }
-  
-  schedulesList.innerHTML = '';
-  events.forEach(event => {
-    const startTime = new Date(event.start_time);
-    const time = startTime.toLocaleString('ko-KR', {
-      timeZone: 'Asia/Seoul',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    
-    const item = document.createElement('div');
-    item.className = 'schedule-item';
-    item.innerHTML = `
-      <div class="schedule-time">${time}</div>
-      <div class="schedule-title">${event.summary}</div>
-      ${event.meet_link ? `<a href="${event.meet_link}" target="_blank" class="schedule-link">Meet</a>` : ''}
-    `;
-    schedulesList.appendChild(item);
   });
 }
 
