@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://npdzxtnzjkdzwbpphduf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-TVlChpvyWRZEweQ8wHe2g_WxQD5nql';
 
-// 현재 선택된 날짜
+// 현재 선택된 날짜 (초기값: 오늘)
 let currentDate = new Date();
 
 // Supabase 기본 함수
@@ -42,7 +42,9 @@ async function addTask(task) {
     },
     body: JSON.stringify(task)
   });
-  return response.json();
+  if (response.ok) return response.json();
+  console.error('Failed to add task');
+  return null;
 }
 
 async function updateTask(id, updates) {
@@ -85,7 +87,9 @@ async function addClient(client) {
     },
     body: JSON.stringify(client)
   });
-  return response.json();
+  if (response.ok) return response.json();
+  console.error('Failed to add client');
+  return null;
 }
 
 async function updateClient(id, updates) {
@@ -115,11 +119,20 @@ async function deleteClient(id) {
 
 // Events (Calendar) 조회
 async function getEvents(filterDate = null) {
-  if (filterDate) {
-    const dateStr = filterDate.toISOString().split('T')[0];
-    return supabaseQuery('events', `start_time=gte.${dateStr}T00:00:00&order=start_time.asc`);
+  if (!filterDate) return [];
+  
+  const dateStr = filterDate.toISOString().split('T')[0];
+  const isToday = dateStr === new Date().toISOString().split('T')[0];
+  
+  if (isToday) {
+    // 오늘: 현재 시간부터
+    const now = new Date().toISOString();
+    return supabaseQuery('events', `start_time=gte.${now}&order=start_time.asc`);
+  } else {
+    // 내일 이후: 오전 11시부터
+    const timeStr = dateStr + 'T11:00:00';
+    return supabaseQuery('events', `start_time=gte.${timeStr}&order=start_time.asc`);
   }
-  return supabaseQuery('events', 'order=start_time.asc');
 }
 
 // 시계 업데이트
@@ -141,8 +154,13 @@ function formatDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
-  return `${year}-${month}-${day} (${dayName})`;
+  const dayName = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+  const isToday = date.toDateString() === new Date().toDateString();
+  
+  let prefix = '';
+  if (isToday) prefix = '[오늘] ';
+  
+  return `${prefix}${year}-${month}-${day} (${dayName})`;
 }
 
 // 날짜 선택 UI 업데이트
@@ -291,6 +309,10 @@ function closeTaskModal() {
   const modal = document.getElementById('taskModal');
   if (modal) {
     modal.style.display = 'none';
+    document.querySelector('input[name="taskName"]').value = '';
+    document.querySelector('input[name="taskClient"]').value = '';
+    document.querySelector('input[name="taskAssignee"]').value = '';
+    document.querySelector('select[name="taskStatus"]').value = 'To-Do';
   }
 }
 
@@ -307,7 +329,7 @@ async function submitAddTask() {
   
   const dateStr = currentDate.toISOString().split('T')[0];
   
-  await addTask({
+  const newTask = await addTask({
     task: taskName,
     client: client || null,
     assignee: assignee || null,
@@ -315,17 +337,75 @@ async function submitAddTask() {
     date: dateStr
   });
   
-  closeTaskModal();
-  loadDashboard();
+  if (newTask) {
+    closeTaskModal();
+    loadDashboard();
+    alert('Task가 추가되었습니다!');
+  } else {
+    alert('Task 추가 실패!');
+  }
+}
+
+// Client 추가 모달
+function showAddClientModal() {
+  const modal = document.getElementById('clientModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.querySelector('input[name="clientName"]').focus();
+  }
+}
+
+function closeClientModal() {
+  const modal = document.getElementById('clientModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.querySelector('input[name="clientName"]').value = '';
+    document.querySelector('select[name="clientCategory"]').value = '진행중';
+    document.querySelector('input[name="clientAssignee"]').value = '';
+    document.querySelector('input[name="clientKol"]').value = '';
+    document.querySelector('input[name="clientCommunity"]').value = '';
+    document.querySelector('select[name="clientRisk"]').value = 'Green';
+  }
+}
+
+async function submitAddClient() {
+  const clientName = document.querySelector('input[name="clientName"]').value;
+  const category = document.querySelector('select[name="clientCategory"]').value;
+  const assignee = document.querySelector('input[name="clientAssignee"]').value;
+  const kol = document.querySelector('input[name="clientKol"]').value;
+  const community = document.querySelector('input[name="clientCommunity"]').value;
+  const risk = document.querySelector('select[name="clientRisk"]').value;
+  
+  if (!clientName.trim()) {
+    alert('Client 이름을 입력하세요.');
+    return;
+  }
+  
+  const newClient = await addClient({
+    client: clientName,
+    category: category,
+    assignee: assignee || null,
+    kol: kol || null,
+    community: community || null,
+    risk: risk
+  });
+  
+  if (newClient) {
+    closeClientModal();
+    loadDashboard();
+    alert('Client가 추가되었습니다!');
+  } else {
+    alert('Client 추가 실패!');
+  }
 }
 
 // 초기화
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
+    updateDateDisplay();
     setInterval(updateClock, 1000);
   });
 } else {
-  loadDashboard();
+  updateDateDisplay();
   setInterval(updateClock, 1000);
 }

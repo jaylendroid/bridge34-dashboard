@@ -81,7 +81,7 @@
       font-size: 1.1rem;
       font-weight: 600;
       color: #fff;
-      min-width: 200px;
+      min-width: 250px;
     }
 
     .date-icon {
@@ -272,11 +272,33 @@
       margin-top: 20px;
     }
 
+    .clients-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
     .clients-title {
       font-size: 1.3rem;
       font-weight: 700;
-      margin-bottom: 16px;
       color: #fff;
+    }
+
+    .add-client-btn {
+      background: #44dd88;
+      border: none;
+      color: #0c0c1a;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .add-client-btn:hover {
+      background: #66ff99;
+      transform: translateY(-2px);
     }
 
     .clients-table {
@@ -322,7 +344,7 @@
 
     .close-btn:hover { color: #ff6633; }
 
-    /* Task 추가 모달 */
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -461,13 +483,16 @@
 
   <!-- Schedules 섹션 -->
   <div class="schedules-section">
-    <h2 class="schedules-title">📅 Schedules</h2>
+    <h2 class="schedules-title">📅 Schedules (Google Calendar)</h2>
     <div class="schedules-list"></div>
   </div>
 
   <!-- Clients 테이블 -->
   <div class="clients-section">
-    <h2 class="clients-title">Clients</h2>
+    <div class="clients-header">
+      <h2 class="clients-title">Clients</h2>
+      <button class="add-client-btn" onclick="showAddClientModal()">+ Client 추가</button>
+    </div>
     <table class="clients-table">
       <thead>
         <tr>
@@ -520,10 +545,63 @@
     </div>
   </div>
 
+  <!-- Client 추가 모달 -->
+  <div class="modal" id="clientModal">
+    <div class="modal-content">
+      <h2 class="modal-title">Client 추가</h2>
+      
+      <div class="modal-group">
+        <label class="modal-label">Client 이름 *</label>
+        <input type="text" name="clientName" placeholder="클라이언트 이름을 입력하세요">
+      </div>
+
+      <div class="modal-group">
+        <label class="modal-label">Category</label>
+        <select name="clientCategory">
+          <option value="진행중">진행중</option>
+          <option value="논의중">논의중</option>
+          <option value="중단">중단</option>
+        </select>
+      </div>
+
+      <div class="modal-group">
+        <label class="modal-label">Assignee</label>
+        <input type="text" name="clientAssignee" placeholder="담당자 (선택)">
+      </div>
+
+      <div class="modal-group">
+        <label class="modal-label">KOL</label>
+        <input type="text" name="clientKol" placeholder="KOL (선택)">
+      </div>
+
+      <div class="modal-group">
+        <label class="modal-label">Community</label>
+        <input type="text" name="clientCommunity" placeholder="커뮤니티 (선택)">
+      </div>
+
+      <div class="modal-group">
+        <label class="modal-label">Risk</label>
+        <select name="clientRisk">
+          <option value="Green">Green</option>
+          <option value="Yellow">Yellow</option>
+          <option value="Red">Red</option>
+        </select>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="modal-btn submit" onclick="submitAddClient()">추가</button>
+        <button class="modal-btn cancel" onclick="closeClientModal()">취소</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 모달 외부 클릭으로 닫기 -->
   <script>
     document.getElementById('taskModal').addEventListener('click', (e) => {
       if (e.target.id === 'taskModal') closeTaskModal();
+    });
+    document.getElementById('clientModal').addEventListener('click', (e) => {
+      if (e.target.id === 'clientModal') closeClientModal();
     });
   </script>
 
