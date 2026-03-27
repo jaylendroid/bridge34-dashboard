@@ -28,11 +28,28 @@ async function supabaseQuery(table, filters = '') {
 
 // Tasks CRUD
 async function getTasks(filterDate = null) {
-  if (filterDate) {
-    const dateStr = filterDate.toISOString().split('T')[0];
-    return supabaseQuery('tasks', `date=eq.${dateStr}&order=created_at.desc`);
+  try {
+    if (filterDate) {
+      const dateStr = filterDate.toISOString().split('T')[0];
+      const url = `${SUPABASE_URL}/rest/v1/tasks?date=eq.${encodeURIComponent(dateStr)}&order=created_at.desc`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        console.error('Query failed:', response.status, await response.text());
+        return [];
+      }
+      return await response.json();
+    }
+    return supabaseQuery('tasks', 'order=created_at.desc');
+  } catch (error) {
+    console.error('getTasks error:', error);
+    return [];
   }
-  return supabaseQuery('tasks', 'order=created_at.desc');
 }
 
 async function addTask(task) {
