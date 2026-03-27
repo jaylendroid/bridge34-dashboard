@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Bridge34 Team Dashboard",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "node api/sync-calendar.js",
     "build": "echo 'Build complete'"
