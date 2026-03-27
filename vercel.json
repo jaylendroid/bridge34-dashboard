@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "functions": {
     "api/sync-calendar.js": {
-      "runtime": "nodejs18.x",
+      "runtime": "@vercel/node@2.x",
       "memory": 512,
       "maxDuration": 60
     }
