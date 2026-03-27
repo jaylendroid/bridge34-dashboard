@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
+  "functions": {
+    "api/sync-calendar.js": {
+      "runtime": "nodejs18.x",
+      "memory": 512,
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/sync-calendar",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

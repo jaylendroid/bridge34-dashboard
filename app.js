@@ -2,6 +2,9 @@
 const SUPABASE_URL = 'https://npdzxtnzjkdzwbpphduf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-TVlChpvyWRZEweQ8wHe2g_WxQD5nql';
 
+// 현재 선택된 날짜
+let currentDate = new Date();
+
 // Supabase 기본 함수
 async function supabaseQuery(table, filters = '') {
   const url = `${SUPABASE_URL}/rest/v1/${table}?${filters}`;
@@ -21,7 +24,11 @@ async function supabaseQuery(table, filters = '') {
 }
 
 // Tasks CRUD
-async function getTasks() {
+async function getTasks(filterDate = null) {
+  if (filterDate) {
+    const dateStr = filterDate.toISOString().split('T')[0];
+    return supabaseQuery('tasks', `date=eq.${dateStr}&order=created_at.desc`);
+  }
   return supabaseQuery('tasks', 'order=created_at.desc');
 }
 
@@ -106,6 +113,15 @@ async function deleteClient(id) {
   return response.status === 204;
 }
 
+// Events (Calendar) 조회
+async function getEvents(filterDate = null) {
+  if (filterDate) {
+    const dateStr = filterDate.toISOString().split('T')[0];
+    return supabaseQuery('events', `start_time=gte.${dateStr}T00:00:00&order=start_time.asc`);
+  }
+  return supabaseQuery('events', 'order=start_time.asc');
+}
+
 // 시계 업데이트
 function updateClock() {
   const now = new Date();
@@ -120,20 +136,43 @@ function updateClock() {
   if (clockEl) clockEl.textContent = kstTime;
 }
 
+// 날짜 포맷팅
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+  return `${year}-${month}-${day} (${dayName})`;
+}
+
+// 날짜 선택 UI 업데이트
+function updateDateDisplay() {
+  const dateEl = document.querySelector('.date-display');
+  if (dateEl) {
+    dateEl.textContent = formatDate(currentDate);
+  }
+  loadDashboard();
+}
+
+// 날짜 변경
+function changeDate(days) {
+  currentDate.setDate(currentDate.getDate() + days);
+  updateDateDisplay();
+}
+
 // 데이터 로드 및 렌더링
-async function initDashboard() {
+async function loadDashboard() {
   try {
-    // Tasks 로드
-    const tasks = await getTasks();
+    const tasks = await getTasks(currentDate);
     renderTasks(tasks);
     
-    // Clients 로드
     const clients = await getClients();
     renderClients(clients);
     
-    // 시계 업데이트
+    const events = await getEvents(currentDate);
+    renderSchedules(events);
+    
     updateClock();
-    setInterval(updateClock, 1000);
   } catch (error) {
     console.error('Failed to load dashboard:', error);
   }
@@ -209,9 +248,84 @@ function renderClients(clients) {
   });
 }
 
-// 페이지 로드 시 초기화
+function renderSchedules(events) {
+  const schedulesList = document.querySelector('.schedules-list');
+  if (!schedulesList) return;
+  
+  if (events.length === 0) {
+    schedulesList.innerHTML = '<div class="schedule-empty">일정이 없습니다.</div>';
+    return;
+  }
+  
+  schedulesList.innerHTML = '';
+  events.forEach(event => {
+    const startTime = new Date(event.start_time);
+    const time = startTime.toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const item = document.createElement('div');
+    item.className = 'schedule-item';
+    item.innerHTML = `
+      <div class="schedule-time">${time}</div>
+      <div class="schedule-title">${event.summary}</div>
+      ${event.meet_link ? `<a href="${event.meet_link}" target="_blank" class="schedule-link">Meet</a>` : ''}
+    `;
+    schedulesList.appendChild(item);
+  });
+}
+
+// Task 추가 모달
+function showAddTaskModal() {
+  const modal = document.getElementById('taskModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.querySelector('input[name="taskName"]').focus();
+  }
+}
+
+function closeTaskModal() {
+  const modal = document.getElementById('taskModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function submitAddTask() {
+  const taskName = document.querySelector('input[name="taskName"]').value;
+  const client = document.querySelector('input[name="taskClient"]').value;
+  const assignee = document.querySelector('input[name="taskAssignee"]').value;
+  const status = document.querySelector('select[name="taskStatus"]').value;
+  
+  if (!taskName.trim()) {
+    alert('Task 이름을 입력하세요.');
+    return;
+  }
+  
+  const dateStr = currentDate.toISOString().split('T')[0];
+  
+  await addTask({
+    task: taskName,
+    client: client || null,
+    assignee: assignee || null,
+    status: status,
+    date: dateStr
+  });
+  
+  closeTaskModal();
+  loadDashboard();
+}
+
+// 초기화
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initDashboard);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+    setInterval(updateClock, 1000);
+  });
 } else {
-  initDashboard();
+  loadDashboard();
+  setInterval(updateClock, 1000);
 }
