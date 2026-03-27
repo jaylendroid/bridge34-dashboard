@@ -1,10 +1,21 @@
-// Vercel Serverless Function: Google Calendar → Supabase 동기화
+// Vercel Serverless Function: Google Calendar → Supabase 동기화 (OAuth 사용)
 
 export default async function handler(req, res) {
   try {
+    // OAuth token이 필요한데, 지금은 환경변수나 DB에서 가져와야 함
+    // 임시로 GOOGLE_OAUTH_TOKEN 사용
+    const OAUTH_TOKEN = process.env.GOOGLE_OAUTH_TOKEN;
+    
+    if (!OAUTH_TOKEN) {
+      return res.status(401).json({
+        success: false,
+        error: 'OAuth token not found. Please authenticate first.',
+        authUrl: 'https://bridge34-dashboard-duob.vercel.app/api/auth'
+      });
+    }
+
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_KEY;
-    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
     const CALENDARS = [
       'jaylen@bridge34.com',
@@ -28,16 +39,23 @@ export default async function handler(req, res) {
 
     let allEvents = [];
 
-    // 각 캘린더에서 이벤트 가져오기
+    // OAuth token으로 각 캘린더에서 이벤트 가져오기
     for (const calEmail of CALENDARS) {
       try {
         const response = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calEmail)}/events?key=${GOOGLE_API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&maxResults=50`
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calEmail)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`,
+          {
+            headers: {
+              'Authorization': `Bearer ${OAUTH_TOKEN}`
+            }
+          }
         );
         
         if (response.ok) {
           const data = await response.json();
           allEvents = allEvents.concat(data.items || []);
+        } else if (response.status === 403) {
+          console.warn(`Permission denied for ${calEmail}`);
         }
       } catch (err) {
         console.error(`Error fetching ${calEmail}:`, err);
