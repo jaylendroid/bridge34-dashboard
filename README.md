@@ -1,4 +1,4 @@
-# FireAnt Dashboard 셋업 가이드
+# Bridge34 Dashboard 셋업 가이드
 
 ## 구글 시트 구조
 
