@@ -8,12 +8,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1067733286769-b6u3j8eeou74b1eg078qq8hhtohv72u6.apps.googleusercontent.com';
-    const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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';
+    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
     const REDIRECT_URI = 'https://bridge34-dashboard-duob.vercel.app/api/auth/callback';
 
     if (!CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(500).json({ error: 'Google OAuth credentials not found' });
+      return res.status(500).json({ 
+        error: 'Google OAuth credentials not configured in Vercel',
+        message: 'Make sure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in Vercel Environment Variables'
+      });
     }
 
     // Authorization code를 access token으로 교환
@@ -35,13 +38,13 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ error: 'Failed to get access token', details: tokenData });
     }
 
-    // Access token 반환 (나중에 DB에 저장)
+    // Access token 반환
     res.status(200).json({
       success: true,
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
       expires_in: tokenData.expires_in,
-      message: 'Copy the access_token above and add to GOOGLE_OAUTH_TOKEN environment variable in Vercel'
+      message: 'Copy the access_token and add to GOOGLE_OAUTH_TOKEN in Vercel'
     });
   } catch (error) {
     console.error('OAuth callback error:', error);

@@ -1,18 +1,15 @@
 // OAuth 인증 초기화
 
 module.exports = async function handler(req, res) {
-  // 환경변수 강제 로드
-  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1067733286769-b6u3j8eeou74b1eg078qq8hhtohv72u6.apps.googleusercontent.com';
+  // 환경변수 로드
+  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const REDIRECT_URI = 'https://bridge34-dashboard-duob.vercel.app/api/auth/callback';
   const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
-  if (!CLIENT_ID || CLIENT_ID === 'undefined') {
+  if (!CLIENT_ID) {
     return res.status(500).json({ 
       error: 'GOOGLE_CLIENT_ID not configured',
-      debug: {
-        env: process.env.GOOGLE_CLIENT_ID || 'undefined',
-        fallback: '1067733286769-b6u3j8eeou74b1eg078qq8hhtohv72u6.apps.googleusercontent.com'
-      }
+      message: 'Please set GOOGLE_CLIENT_ID in Vercel Environment Variables'
     });
   }
 
