@@ -1,13 +1,4 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".",
-  "functions": {
-    "api/sync-calendar.js": {
-      "runtime": "@vercel/node@2.x",
-      "memory": 512,
-      "maxDuration": 60
-    }
-  },
   "crons": [
     {
       "path": "/api/sync-calendar",
