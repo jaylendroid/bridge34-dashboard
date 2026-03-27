@@ -1,4 +1,14 @@
 {
+  "version": 2,
+  "buildCommand": "echo Building...",
+  "outputDirectory": ".",
+  "env": {
+    "GOOGLE_CLIENT_ID": "@google_client_id",
+    "GOOGLE_CLIENT_SECRET": "@google_client_secret",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_KEY": "@supabase_key",
+    "GOOGLE_OAUTH_TOKEN": "@google_oauth_token"
+  },
   "crons": [
     {
       "path": "/api/sync-calendar",
