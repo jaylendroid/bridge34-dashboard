@@ -2,6 +2,9 @@
 const SUPABASE_URL = 'https://npdzxtnzjkdzwbpphduf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-TVlChpvyWRZEweQ8wHe2g_WxQD5nql';
 
+// Apps Script Calendar 데이터 URL
+const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/bridge34.com/s/AKfycbylZPae0wFKRE0wHakPAl4C3bFumoedYHRRV4EEZHqwxhN9DIJ3csVt40Y6Zooag0vU/exec';
+
 // 현재 선택된 날짜 (초기값: 오늘)
 let currentDate = new Date();
 
@@ -91,6 +94,34 @@ async function deleteClient(id) {
   return response.status === 204;
 }
 
+// Apps Script에서 Calendar 데이터 가져오기
+async function getCalendarEvents() {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'GET',
+      mode: 'cors'
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch calendar from Apps Script');
+      return [];
+    }
+    
+    const html = await response.text();
+    // Apps Script가 JSON을 반환하는 경우
+    try {
+      return JSON.parse(html);
+    } catch {
+      // HTML 반환하는 경우 파싱
+      console.warn('Apps Script returned HTML, skipping calendar');
+      return [];
+    }
+  } catch (error) {
+    console.warn('Calendar fetch error:', error);
+    return [];
+  }
+}
+
 // 시계 업데이트
 function updateClock() {
   const now = new Date();
@@ -142,6 +173,10 @@ async function loadDashboard() {
     
     const clients = await getClients();
     renderClients(clients);
+    
+    // Calendar 데이터 로드 (에러나면 무시)
+    const events = await getCalendarEvents();
+    renderSchedules(events);
     
     updateClock();
   } catch (error) {
@@ -216,6 +251,33 @@ function renderClients(clients) {
     });
     
     clientsList.appendChild(row);
+  });
+}
+
+function renderSchedules(events) {
+  const schedulesList = document.querySelector('.schedules-list');
+  if (!schedulesList) return;
+  
+  if (!events || events.length === 0) {
+    schedulesList.innerHTML = '<div class="schedule-empty">일정이 없습니다.</div>';
+    return;
+  }
+  
+  schedulesList.innerHTML = '';
+  events.forEach(event => {
+    const item = document.createElement('div');
+    item.className = 'schedule-item';
+    
+    const time = event.time || event.start_time || '—';
+    const title = event.summary || event.title || event.name || '(제목 없음)';
+    const meetLink = event.meet_link || event.link || null;
+    
+    item.innerHTML = `
+      <div class="schedule-time">${time}</div>
+      <div class="schedule-title">${title}</div>
+      ${meetLink ? `<a href="${meetLink}" target="_blank" class="schedule-link">Meet</a>` : ''}
+    `;
+    schedulesList.appendChild(item);
   });
 }
 

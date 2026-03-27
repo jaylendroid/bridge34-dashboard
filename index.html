@@ -201,6 +201,72 @@
       margin-top: 6px;
     }
 
+    /* Schedules 섹션 */
+    .schedules-section {
+      background: #14142a;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .schedules-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .schedules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #1a1a2e;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border-left: 3px solid #6699ff;
+    }
+
+    .schedule-time {
+      font-weight: 600;
+      color: #6699ff;
+      min-width: 50px;
+    }
+
+    .schedule-title {
+      flex: 1;
+      color: #fff;
+    }
+
+    .schedule-link {
+      background: #ff6633;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .schedule-link:hover {
+      background: #ff8844;
+    }
+
+    .schedule-empty {
+      color: #666;
+      padding: 20px;
+      text-align: center;
+    }
+
     /* Clients Table */
     .clients-section {
       margin-top: 20px;
@@ -413,6 +479,12 @@
     <div class="column" data-status="Done">
       <div class="column-title">Done</div>
     </div>
+  </div>
+
+  <!-- Schedules 섹션 -->
+  <div class="schedules-section">
+    <h2 class="schedules-title">📅 Schedules (Google Calendar)</h2>
+    <div class="schedules-list"></div>
   </div>
 
   <!-- Clients 테이블 -->
