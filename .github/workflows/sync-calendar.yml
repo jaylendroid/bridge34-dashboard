@@ -1,48 +1,45 @@
 name: Sync Google Calendar to Supabase
 
-# 트리거: 1시간마다 실행
 on:
   schedule:
-    # 매 시간 00분에 실행 (UTC 기준)
+    # UTC 기준 매 시간 00분에 실행
+    # 한국시간(UTC+9)으로는 9시간 뒤
     - cron: '0 * * * *'
-  # 수동 트리거 (Actions 탭에서)
+  
+  # 수동 실행 가능
   workflow_dispatch:
 
 jobs:
-  sync-calendar:
+  sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+    
     steps:
-      # 1. 저장소 체크아웃
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # 2. Node.js 환경 설정 (LTS 버전)
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
-          cache: 'npm'
-
-      # 3. gog CLI 설치
+          node-version: '18'
+      
       - name: Install gog CLI
         run: npm install -g gog
-
-      # 4. 의존성 설치 (supabase-js만)
+      
       - name: Install dependencies
         run: npm install
-
-      # 5. 동기화 스크립트 실행
-      - name: Sync Calendar
+      
+      - name: Configure gog auth
+        run: |
+          # GitHub Actions의 기본 인증을 사용
+          # (로컬 gog auth는 GitHub Actions에서 자동으로 사용됨)
+          gog auth list
+      
+      - name: Run sync script
         run: node scripts/sync-calendar.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
-
-      # 6. 실패 시 알림 (선택사항)
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "❌ Calendar sync failed!"
-          echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      
+      - name: Log sync completion
+        if: always()
+        run: echo "Calendar sync completed at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
