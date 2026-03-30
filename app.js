@@ -137,22 +137,26 @@ function renderTodos(tasks) {
   }
   const assignees = Object.keys(grouped);
   if (!assignees.length) {
-    wrap.innerHTML = '<div class="empty">할 일 없음 ✅</div>';
+    wrap.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px">할일 없음</div>';
     return;
   }
+  const MAX_SHOW = 5;
   wrap.innerHTML = assignees.map(name => {
     const arr = grouped[name];
-    const items = arr.map((t) => `
+    const visible = arr.slice(0, MAX_SHOW);
+    const extra = arr.length - MAX_SHOW;
+    const items = visible.map(t => `
       <div class="todo-item${t.status==='Done'?' done':''}">
         <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTodo('${t.id}',this)">
         <span>${esc(t.task||'-')}</span>
       </div>`).join('');
+    const more = extra > 0 ? `<div class="todo-more">+${extra}개 더</div>` : '';
     return `<div class="todo-group">
       <div class="todo-head">
         <span class="todo-name">👤 ${esc(name)}</span>
         <span class="todo-rate">${arr.length}건</span>
       </div>
-      ${items}
+      ${items}${more}
     </div>`;
   }).join('');
 }
