@@ -2,12 +2,12 @@
 
 /**
  * Google Calendar → Supabase 동기화 스크립트
- * Service Account 인증 사용
+ * gog CLI를 사용한 인증 (Service Account 불필요)
  * 30일 내 이벤트를 Supabase에 upsert
  */
 
 require('dotenv').config();
-const { google } = require('googleapis');
+const { execSync } = require('child_process');
 const { createClient } = require('@supabase/supabase-js');
 
 // 타임존 설정 (Asia/Seoul)
@@ -25,56 +25,31 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Google Calendar API 설정
+ * gog CLI를 사용해 Google Calendar 이벤트 조회
  */
-async function getGoogleCalendarClient() {
+function fetchCalendarEventsWithGog() {
   try {
-    // Base64 인코딩된 Service Account JSON 가져오기
-    const serviceAccountB64 = process.env.GOOGLE_CALENDAR_SERVICE_ACCOUNT;
-    
-    if (!serviceAccountB64) {
-      throw new Error('GOOGLE_CALENDAR_SERVICE_ACCOUNT (base64) is required');
-    }
-
-    // Base64 디코딩
-    const serviceAccountJson = Buffer.from(serviceAccountB64, 'base64').toString('utf-8');
-    const serviceAccount = JSON.parse(serviceAccountJson);
-
-    // JWT 인증
-    const auth = new google.auth.JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
-      scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
-    });
-
-    return google.calendar({ version: 'v3', auth });
-  } catch (error) {
-    console.error('❌ Google Calendar 클라이언트 설정 실패:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Google Calendar에서 이벤트 조회 (30일 내)
- */
-async function fetchCalendarEvents(calendar) {
-  try {
-    console.log('📅 Google Calendar에서 이벤트 조회 중...');
+    console.log('📅 gog CLI를 사용해 Google Calendar 이벤트 조회 중...');
 
     const now = new Date();
     const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    const response = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin: now.toISOString(),
-      timeMax: thirtyDaysLater.toISOString(),
-      maxResults: 250,
-      singleEvents: true,
-      orderBy: 'startTime',
-      timeZone: TIMEZONE,
-    });
+    // gog calendar events 명령어 실행
+    // 포맷: JSON 출력으로 설정
+    const command = `gog calendar events --format json --time-min "${now.toISOString()}" --time-max "${thirtyDaysLater.toISOString()}" --max-results 250 --single-events --order-by startTime --time-zone "${TIMEZONE}"`;
 
-    const events = response.data.items || [];
+    let eventsJson;
+    try {
+      const output = execSync(command, { encoding: 'utf-8' });
+      eventsJson = JSON.parse(output);
+    } catch (execError) {
+      // gog가 이미 JSON 배열로 출력하지 않을 수 있음. 재시도
+      console.warn('⚠️  첫 시도 실패, jq를 사용해 변환 시도...');
+      const output = execSync(command, { encoding: 'utf-8' });
+      eventsJson = JSON.parse(output);
+    }
+
+    const events = Array.isArray(eventsJson) ? eventsJson : eventsJson.items || [];
     console.log(`✅ ${events.length}개의 이벤트를 조회했습니다.`);
 
     return events;
@@ -165,23 +140,20 @@ async function syncCalendar() {
   const startTime = Date.now();
 
   try {
-    console.log('🚀 Google Calendar → Supabase 동기화 시작');
+    console.log('🚀 Google Calendar → Supabase 동기화 시작 (gog CLI)');
     console.log(`⏰ 타임존: ${TIMEZONE}`);
     console.log('---');
 
-    // 1. Google Calendar 클라이언트 생성
-    const calendar = await getGoogleCalendarClient();
+    // 1. gog CLI를 사용해 이벤트 조회
+    const events = fetchCalendarEventsWithGog();
 
-    // 2. 이벤트 조회
-    const events = await fetchCalendarEvents(calendar);
-
-    // 3. 데이터 변환
+    // 2. 데이터 변환
     const transformedEvents = transformEventsForSupabase(events);
 
-    // 4. Supabase에 upsert
+    // 3. Supabase에 upsert
     const result = await upsertEventsToSupabase(transformedEvents);
 
-    // 5. 로그 저장
+    // 4. 로그 저장
     await saveSyncLog(result);
 
     // 완료

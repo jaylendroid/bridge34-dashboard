@@ -25,19 +25,22 @@ jobs:
           node-version: '18.x'
           cache: 'npm'
 
-      # 3. 의존성 설치
+      # 3. gog CLI 설치
+      - name: Install gog CLI
+        run: npm install -g gog
+
+      # 4. 의존성 설치 (supabase-js만)
       - name: Install dependencies
         run: npm install
 
-      # 4. 동기화 스크립트 실행
+      # 5. 동기화 스크립트 실행
       - name: Sync Calendar
         run: node scripts/sync-calendar.js
         env:
-          GOOGLE_CALENDAR_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_CALENDAR_SERVICE_ACCOUNT }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
 
-      # 5. 실패 시 알림 (선택사항)
+      # 6. 실패 시 알림 (선택사항)
       - name: Notify on failure
         if: failure()
         run: |
