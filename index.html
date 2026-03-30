@@ -106,9 +106,9 @@
     .todo-groups {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      grid-auto-rows: auto;
       gap: 6px;
-      height: 100%;
+      align-content: start;
       overflow: hidden;
     }
     .todo-group {
@@ -117,7 +117,6 @@
       border-radius: 6px;
       padding: 6px 8px;
       overflow: hidden;
-      min-height: 0;
     }
     .todo-head {
       display: flex;
