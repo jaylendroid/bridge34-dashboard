@@ -291,7 +291,21 @@
           </div>
         </section>
 
-        <!-- 좌하단: 오늘/내일 일정 좌우 분할 -->
+        <!-- 좌하단: 미확정 딜 (8열) -->
+        <section class="panel panel-deals">
+          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
+          <div id="dealList" class="deal-grid"></div>
+        </section>
+      </div>
+
+      <div class="right-col">
+        <!-- 우상단: 직원별 To-Do -->
+        <section class="panel">
+          <div class="panel-title">👤 직원별 To-Do</div>
+          <div id="todoGroups" class="todo-groups"></div>
+        </section>
+
+        <!-- 우하단: 오늘/내일 일정 좌우 분할 -->
         <div class="bottom-schedule">
           <section class="panel">
             <div class="panel-title" id="todayTitle">📅 오늘</div>
@@ -302,20 +316,6 @@
             <div id="tomorrowList" class="schedule-list"></div>
           </section>
         </div>
-      </div>
-
-      <div class="right-col">
-        <!-- 우상단: 직원별 To-Do -->
-        <section class="panel">
-          <div class="panel-title">👤 직원별 To-Do</div>
-          <div id="todoGroups" class="todo-groups"></div>
-        </section>
-
-        <!-- 우하단: 미확정 딜 -->
-        <section class="panel">
-          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
-          <div id="dealList" class="deal-grid"></div>
-        </section>
       </div>
     </main>
   </div>
