@@ -5,6 +5,7 @@ const ASSIGNEE_DISPLAY = {
   'Jaylen_77': 'Jaylen',
   'Benbenbennnn': 'Ben',
   'sylviechoi': 'Sylvie',
+  'lenaeo25': 'Lena',
   'fireantico': '불개미',
   'Stanley_UJ': 'Stanley',
 };
@@ -125,9 +126,8 @@ async function loadAll() {
   renderSchedule(tomorrowEvents, 'tomorrowList');
 }
 
-// 6명 고정 순서
-const ALL_MEMBERS = ['Jaylen', 'Ben', 'Sylvie', '불개미', 'Stanley', '기타'];
-const MEMBER_EMOJI = { 'Jaylen':'👤', 'Ben':'👤', 'Sylvie':'👤', '불개미':'👤', 'Stanley':'👤', '기타':'👤' };
+// 7명 고정 순서
+const ALL_MEMBERS = ['Jaylen', 'Ben', 'Sylvie', 'Lena', '불개미', 'Stanley', '기타'];
 
 function renderTodos(tasks) {
   const wrap = document.getElementById('todoGroups');
