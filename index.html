@@ -55,7 +55,7 @@
 
     .content {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 0;
       height: calc(100vh - 60px);
       overflow: hidden;
@@ -70,6 +70,21 @@
     }
 
     .panel:last-child { border-right: none; }
+
+    /* 우측: To-Do + 미확정 딜 상하 분할 */
+    .right-col {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      overflow: hidden;
+      border-left: 1px solid var(--line);
+    }
+
+    .right-col .panel {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .right-col .panel:last-child { border-bottom: none; }
 
     .panel-title {
       display: flex;
@@ -264,15 +279,17 @@
         </div>
       </section>
 
-      <section class="panel">
-        <div class="panel-title">👤 직원별 To-Do</div>
-        <div id="todoGroups" class="todo-groups"></div>
-      </section>
+      <div class="right-col">
+        <section class="panel">
+          <div class="panel-title">👤 직원별 To-Do</div>
+          <div id="todoGroups" class="todo-groups"></div>
+        </section>
 
-      <section class="panel">
-        <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
-        <div id="dealList" class="deal-list"></div>
-      </section>
+        <section class="panel">
+          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
+          <div id="dealList" class="deal-list"></div>
+        </section>
+      </div>
     </main>
   </div>
 
