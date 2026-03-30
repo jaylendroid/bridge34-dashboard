@@ -1,6 +1,14 @@
 const SUPABASE_URL = 'https://npdzxtnzjkdzwbpphduf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-TVlChpvyWRZEweQ8wHe2g_WxQD5nql';
 
+const ASSIGNEE_DISPLAY = {
+  'Jaylen_77': 'Jaylen',
+  'Benbenbennnn': 'Ben',
+  'sylviechoi': 'Sylvie',
+  'fireantico': '불개미',
+  'Stanley_UJ': 'Stanley',
+};
+
 function sbHeaders(preferReturn = false) {
   return {
     Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -122,7 +130,8 @@ function renderTodos(tasks) {
   if (!wrap) return;
   const grouped = {};
   for (const t of tasks || []) {
-    const a = t.assignee || 'Unassigned';
+    const raw = t.assignee || 'Unassigned';
+    const a = ASSIGNEE_DISPLAY[raw] || raw;
     if (!grouped[a]) grouped[a] = [];
     grouped[a].push(t);
   }
