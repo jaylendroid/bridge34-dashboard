@@ -7,5 +7,9 @@
     "dev": "node api/sync-calendar.js",
     "build": "echo 'Build complete'"
   },
-  "dependencies": {}
+  "dependencies": {
+    "googleapis": "^140.0.0",
+    "supabase-js": "^2.38.0",
+    "dotenv": "^16.3.1"
+  }
 }
