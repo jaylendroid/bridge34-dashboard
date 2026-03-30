@@ -264,3 +264,53 @@ updateClock();
 refreshDashboard();
 setInterval(updateClock, 1000);
 setInterval(refreshDashboard, 30000);
+
+// ===== Calendar Events (Supabase) =====
+async function loadCalendarEvents() {
+  try {
+    const listDiv = document.getElementById('schedules-list');
+    if (!listDiv) return; // 없으면 스킵
+
+    const response = await supabaseGet('events?order=start_time.asc&limit=20');
+    
+    if (!response || response.length === 0) {
+      listDiv.innerHTML = '<p style="color: #999;">일정이 없습니다</p>';
+      return;
+    }
+    
+    listDiv.innerHTML = response.map(event => {
+      const start = new Date(event.start_time);
+      const time = start.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+      
+      return `
+        <div style="padding: 10px; border-bottom: 1px solid #333;">
+          <div style="font-weight: bold;">${escapeHtml(event.summary || 'Untitled')}</div>
+          <div style="font-size: 0.9em; color: #999;">${time}</div>
+          ${event.meet_link ? `<a href="${escapeHtml(event.meet_link)}" target="_blank" style="color: #4a90e2;">📹 Meet 참여</a>` : ''}
+        </div>
+      `;
+    }).join('');
+    
+    const errorDiv = document.getElementById('schedules-error');
+    if (errorDiv) errorDiv.textContent = '';
+  } catch (error) {
+    console.error('Calendar fetch error:', error);
+    const errorDiv = document.getElementById('schedules-error');
+    if (errorDiv) errorDiv.textContent = `오류: ${error.message}`;
+  } finally {
+    const loadingDiv = document.getElementById('schedules-loading');
+    if (loadingDiv) loadingDiv.style.display = 'none';
+  }
+}
+
+// 초기 로드 때도 calendar 포함
+const originalRefresh = refreshDashboard;
+refreshDashboard = async function() {
+  await Promise.all([originalRefresh(), loadCalendarEvents()]);
+};
+
+// 30초마다 calendar도 새로고침
+setInterval(loadCalendarEvents, 30000);
+
+// 페이지 로드 시 실행
+document.addEventListener('DOMContentLoaded', loadCalendarEvents);
