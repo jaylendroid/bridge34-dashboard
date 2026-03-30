@@ -86,15 +86,54 @@ async function loadAll() {
   const [projects, deals, tasks, todayEvents, tomorrowEvents] = await Promise.all([
     sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EC%A7%84%ED%96%89%EC%A4%91&order=client.asc'),
     sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EB%85%BC%EC%9D%98%EC%A4%91&order=client.asc'),
-    sbGet('tasks?select=id&status=neq.Done&order=created_at.asc'),
+    sbGet('tasks?select=id,task,assignee,status,due_date&status=neq.Done&order=created_at.asc'),
     sbGet(`events?select=id,start_time,summary&start_time=gte.${todayRange.start}&start_time=lt.${todayRange.end}&order=start_time.asc`),
     sbGet(`events?select=id,start_time,summary&start_time=gte.${tomorrowRange.start}&start_time=lt.${tomorrowRange.end}&order=start_time.asc`)
   ]);
 
   renderProjects(projects);
   renderDeals(deals);
+  renderTodos(tasks);
   renderSchedule(todayEvents, 'todayList');
   renderSchedule(tomorrowEvents, 'tomorrowList');
+}
+
+function renderTodos(tasks) {
+  const wrap = document.getElementById('todoGroups');
+  if (!wrap) return;
+  const grouped = {};
+  for (const t of tasks || []) {
+    const a = t.assignee || 'Unassigned';
+    if (!grouped[a]) grouped[a] = [];
+    grouped[a].push(t);
+  }
+  const assignees = Object.keys(grouped);
+  if (!assignees.length) {
+    wrap.innerHTML = '<div class="empty">할 일 없음 ✅</div>';
+    return;
+  }
+  wrap.innerHTML = assignees.map(name => {
+    const arr = grouped[name];
+    const items = arr.map((t, i) => `
+      <div class="todo-item${t.status==='Done'?' done':''}">
+        <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTodo('${t.id}',this)">
+        <span>${esc(t.task||'-')}</span>
+      </div>`).join('');
+    return `<div class="todo-group">
+      <div class="todo-head">
+        <span class="todo-name">👤 ${esc(name)}</span>
+        <span class="todo-rate">${arr.length}건</span>
+      </div>
+      ${items}
+    </div>`;
+  }).join('');
+}
+
+async function toggleTodo(id, cb) {
+  try {
+    await sbPatch(`tasks?id=eq.${id}`, { status: cb.checked ? 'Done' : 'To-Do' });
+    setTimeout(loadAll, 300);
+  } catch(e) { cb.checked = !cb.checked; }
 }
 
 function renderProjects(rows) {

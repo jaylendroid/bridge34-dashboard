@@ -84,6 +84,31 @@
       border-bottom: none;
     }
 
+    /* 좌하단: 오늘/내일 일정 좌우 분할 */
+    .bottom-schedule {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      border-top: 1px solid var(--line);
+      min-height: 0;
+    }
+    .bottom-schedule .panel {
+      border-bottom: none;
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+      padding: 8px 12px;
+    }
+    .bottom-schedule .panel:last-child { border-right: none; }
+
+    /* To-Do */
+    .todo-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; overflow-y: auto; height: calc(100% - 36px); }
+    .todo-group { background: #14142a; border-radius: 8px; padding: 10px 12px; }
+    .todo-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .todo-name { font-weight: 700; font-size: 0.95rem; }
+    .todo-rate { color: var(--muted); font-size: 0.85rem; }
+    .todo-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.85rem; }
+    .todo-item.done span { text-decoration: line-through; opacity: 0.45; }
+
     .panel-title {
       display: flex;
       align-items: center;
@@ -266,21 +291,30 @@
           </div>
         </section>
 
-        <section class="panel panel-deals">
-          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
-          <div id="dealList" class="deal-grid"></div>
-        </section>
+        <!-- 좌하단: 오늘/내일 일정 좌우 분할 -->
+        <div class="bottom-schedule">
+          <section class="panel">
+            <div class="panel-title" id="todayTitle">📅 오늘</div>
+            <div id="todayList" class="schedule-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-title" id="tomorrowTitle">📅 내일</div>
+            <div id="tomorrowList" class="schedule-list"></div>
+          </section>
+        </div>
       </div>
 
       <div class="right-col">
+        <!-- 우상단: 직원별 To-Do -->
         <section class="panel">
-          <div class="panel-title" id="todayTitle">📅 오늘</div>
-          <div id="todayList" class="schedule-list"></div>
+          <div class="panel-title">👤 직원별 To-Do</div>
+          <div id="todoGroups" class="todo-groups"></div>
         </section>
 
+        <!-- 우하단: 미확정 딜 -->
         <section class="panel">
-          <div class="panel-title" id="tomorrowTitle">📅 내일</div>
-          <div id="tomorrowList" class="schedule-list"></div>
+          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
+          <div id="dealList" class="deal-grid"></div>
         </section>
       </div>
     </main>
