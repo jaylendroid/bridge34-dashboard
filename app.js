@@ -149,8 +149,8 @@ function renderTodos(tasks) {
     const visible = arr.slice(0, MAX_SHOW);
     const extra = arr.length - MAX_SHOW;
     const items = visible.map(t => `
-      <div class="todo-item${t.status==='Done'?' done':''}">
-        <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTodo('${t.id}',this)">
+      <div class="todo-item">
+        <span class="todo-bullet">•</span>
         <span>${esc(t.task||'-')}</span>
       </div>`).join('');
     const emptyMsg = arr.length === 0 ? '<div class="todo-more">할일 없음 ✓</div>' : '';
@@ -164,12 +164,7 @@ function renderTodos(tasks) {
   }).join('');
 }
 
-async function toggleTodo(id, cb) {
-  try {
-    await sbPatch(`tasks?id=eq.${id}`, { status: cb.checked ? 'Done' : 'To-Do' });
-    setTimeout(loadAll, 300);
-  } catch(e) { cb.checked = !cb.checked; }
-}
+
 
 function renderProjects(rows) {
   const body = document.getElementById('projectsBody');
