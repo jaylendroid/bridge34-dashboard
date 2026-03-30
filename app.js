@@ -142,7 +142,7 @@ function renderTodos(tasks) {
     if (!grouped[slot]) grouped[slot] = [];
     grouped[slot].push(t);
   }
-  const MAX_SHOW = 6;
+  const MAX_SHOW = 10;
   // 6명 슬롯 고정 순서로 렌더링
   wrap.innerHTML = ALL_MEMBERS.map(name => {
     const arr = grouped[name] || [];
