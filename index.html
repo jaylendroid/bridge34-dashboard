@@ -38,20 +38,17 @@
     }
 
     .header {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
+      display: flex;
       align-items: center;
-      gap: 18px;
+      justify-content: space-between;
       background: var(--header-bg);
       border-bottom: 1px solid var(--line);
       padding: 0 20px;
-      min-height: 60px;
+      height: 60px;
     }
 
-    .logo { font-size: 2rem; font-weight: 800; color: var(--accent); }
-    .date { font-size: 1.05rem; color: var(--text); }
-    .clock { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-    .refresh-hint { font-size: 0.9rem; color: var(--muted); }
+    .logo { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+    .header-right { font-size: 1.05rem; color: var(--text); font-variant-numeric: tabular-nums; }
 
     .content {
       display: grid;
@@ -150,9 +147,9 @@
     }
 
     .todo-groups {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
     .todo-group {
@@ -196,8 +193,8 @@
     .empty { color: var(--muted); font-size: 1rem; padding: 8px 2px; }
 
     .deal-list {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
     }
 
@@ -208,18 +205,22 @@
       padding: 10px;
       cursor: pointer;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 1.05rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 0.95rem;
+      min-height: 72px;
     }
 
+    .deal-title { font-weight: 700; }
+
     .deal-tag {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       padding: 2px 7px;
       border-radius: 999px;
-      background: #f5a623;
-      color: #2a1a00;
-      font-weight: 700;
+      background: #2b2440;
+      color: #c9bdf3;
+      font-weight: 600;
     }
 
     .modal {
@@ -255,23 +256,20 @@
 <body>
   <div class="wrapper">
     <header class="header">
-      <div class="logo">🔶 Bridge34</div>
-      <div class="date" id="date">----.--.-- (-)</div>
-      <div class="clock" id="clock">--:--:-- KST</div>
-      <div class="refresh-hint">↻ 30초마다</div>
+      <div class="logo">Bridge34 Office Board</div>
+      <div class="header-right" id="headerRight">--:--:-- / Asia/Seoul · 자동 새로고침 30초</div>
     </header>
 
     <main class="content">
       <section class="panel">
-        <div class="panel-title">📋 협업 프로젝트 현황 <span class="badge green">진행중</span></div>
+        <div class="panel-title">📋 협업 프로젝트 현황 [진행중]</div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th style="width: 10%">#</th>
-                <th style="width: 28%">프로젝트명</th>
-                <th style="width: 31%">일정</th>
-                <th style="width: 31%">계약 서비스</th>
+                <th style="width: 34%">프로젝트명</th>
+                <th style="width: 33%">기준일</th>
+                <th style="width: 33%">서비스</th>
               </tr>
             </thead>
             <tbody id="projectsBody"></tbody>
@@ -286,7 +284,7 @@
         </section>
 
         <section class="panel">
-          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
+          <div class="panel-title">🤝 미확정 딜 [논의중] <span class="badge yellow" id="dealCountBadge">0</span></div>
           <div id="dealList" class="deal-list"></div>
         </section>
       </div>
