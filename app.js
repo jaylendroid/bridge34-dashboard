@@ -1,243 +1,33 @@
 const SUPABASE_URL = 'https://npdzxtnzjkdzwbpphduf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-TVlChpvyWRZEweQ8wHe2g_WxQD5nql';
 
-const ASSIGNEE_ORDER = ['Jaylen_77', 'Benbenbennnn'];
-
-function headers(prefer = false) {
+function sbHeaders(preferReturn = false) {
   return {
     Authorization: `Bearer ${SUPABASE_KEY}`,
     apikey: SUPABASE_KEY,
     'Content-Type': 'application/json',
-    ...(prefer ? { Prefer: 'return=representation' } : {})
+    ...(preferReturn ? { Prefer: 'return=representation' } : {})
   };
 }
 
-async function supabaseGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: headers() });
+async function sbGet(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders() });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }
 
-async function supabasePatch(path, body) {
+async function sbPatch(path, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     method: 'PATCH',
-    headers: headers(true),
+    headers: sbHeaders(true),
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }
 
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleString('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-}
-
-function getFallbackImportance(clientId) {
-  return localStorage.getItem(`importance:${clientId}`) || '-';
-}
-
-function setFallbackImportance(clientId, value) {
-  localStorage.setItem(`importance:${clientId}`, value || '-');
-}
-
-function normalizedServices(row) {
-  // clients.services 컬럼이 없을 수 있어 notes를 임시 계약서비스로 사용.
-  return row.services ?? row.notes ?? '-';
-}
-
-async function loadClients() {
-  const rows = await supabaseGet('clients?select=*&order=client.asc');
-  return {
-    inProgress: rows.filter(r => r.category === '진행중'),
-    discussing: rows.filter(r => r.category === '논의중')
-  };
-}
-
-async function loadTasks() {
-  const allTasks = await supabaseGet('tasks?select=*&order=created_at.desc&limit=500');
-  const openTasks = allTasks.filter(t => (t.status || '') !== 'Done');
-  return { allTasks, openTasks };
-}
-
-function renderProjects(rows) {
-  const body = document.getElementById('projectsBody');
-  body.innerHTML = '';
-
-  if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="3" class="muted">진행중 프로젝트가 없습니다.</td></tr>';
-    return;
-  }
-
-  rows.forEach(row => {
-    const tr = document.createElement('tr');
-    const importanceValue = row.importance ?? getFallbackImportance(row.id);
-    const servicesValue = normalizedServices(row);
-
-    tr.innerHTML = `
-      <td><strong>${row.client || '-'}</strong></td>
-      <td>
-        <input class="editable" value="${escapeHtml(importanceValue)}" data-role="importance" />
-        <button class="save-btn" data-role="save">저장</button>
-      </td>
-      <td>
-        <input class="editable" value="${escapeHtml(servicesValue)}" data-role="services" />
-      </td>
-    `;
-
-    tr.querySelector('[data-role="save"]').addEventListener('click', async () => {
-      const importance = tr.querySelector('[data-role="importance"]').value.trim() || '-';
-      const services = tr.querySelector('[data-role="services"]').value.trim() || '-';
-
-      try {
-        await supabasePatch(`clients?id=eq.${row.id}`, {
-          // importance 컬럼이 없으면 오류가 날 수 있어 fallback 처리
-          importance,
-          notes: services,
-          updated_at: new Date().toISOString()
-        });
-      } catch (e) {
-        // importance DDL 미적용 환경 대비: 로컬 fallback + notes만 재시도
-        setFallbackImportance(row.id, importance);
-        try {
-          await supabasePatch(`clients?id=eq.${row.id}`, {
-            notes: services,
-            updated_at: new Date().toISOString()
-          });
-        } catch (e2) {
-          alert(`저장 실패: ${e2.message}`);
-          return;
-        }
-      }
-      alert('저장되었습니다.');
-    });
-
-    body.appendChild(tr);
-  });
-}
-
-function groupedTasks(openTasks, allTasks) {
-  const map = {};
-  [...ASSIGNEE_ORDER, ...allTasks.map(t => t.assignee).filter(Boolean)].forEach(name => {
-    if (!name) return;
-    if (!map[name]) map[name] = { open: [], total: 0, done: 0 };
-  });
-
-  allTasks.forEach(t => {
-    const a = t.assignee || 'Unassigned';
-    map[a] ||= { open: [], total: 0, done: 0 };
-    map[a].total += 1;
-    if ((t.status || '') === 'Done') map[a].done += 1;
-  });
-
-  openTasks.forEach(t => {
-    const a = t.assignee || 'Unassigned';
-    map[a] ||= { open: [], total: 0, done: 0 };
-    map[a].open.push(t);
-  });
-
-  return map;
-}
-
-function renderTodos(openTasks, allTasks) {
-  const grid = document.getElementById('todoGrid');
-  grid.innerHTML = '';
-
-  const grouped = groupedTasks(openTasks, allTasks);
-  const assignees = Object.keys(grouped);
-
-  if (!assignees.length) {
-    grid.innerHTML = '<div class="muted">표시할 할일이 없습니다.</div>';
-    return;
-  }
-
-  assignees.forEach(assignee => {
-    const box = grouped[assignee];
-    const progress = box.total ? Math.round((box.done / box.total) * 100) : 0;
-    const card = document.createElement('div');
-    card.className = 'todo-card';
-
-    card.innerHTML = `
-      <div class="todo-title">${assignee}</div>
-      <div class="muted">완료율 ${progress}% (${box.done}/${box.total})</div>
-      <div class="progress"><div class="progress-fill" style="width:${progress}%"></div></div>
-      <div data-role="items"></div>
-    `;
-
-    const items = card.querySelector('[data-role="items"]');
-    if (!box.open.length) {
-      items.innerHTML = '<div class="muted">미완료 항목 없음</div>';
-    } else {
-      box.open.forEach(task => {
-        const item = document.createElement('label');
-        item.className = 'todo-item';
-        item.innerHTML = `
-          <input type="checkbox" data-task-id="${task.id}" />
-          <span>${escapeHtml(task.task || '(제목 없음)')} ${task.due_date ? `· ${task.due_date}` : ''}</span>
-        `;
-
-        item.querySelector('input').addEventListener('change', async (e) => {
-          if (!e.target.checked) return;
-          try {
-            await supabasePatch(`tasks?id=eq.${task.id}`, { status: 'Done' });
-            await refreshDashboard();
-          } catch (err) {
-            alert(`완료 업데이트 실패: ${err.message}`);
-          }
-        });
-
-        items.appendChild(item);
-      });
-    }
-
-    grid.appendChild(card);
-  });
-}
-
-function renderDeals(rows) {
-  const wrap = document.getElementById('dealsWrap');
-  wrap.innerHTML = '';
-
-  if (!rows.length) {
-    wrap.innerHTML = '<div class="muted">논의중 딜이 없습니다.</div>';
-    return;
-  }
-
-  rows.forEach(row => {
-    const card = document.createElement('div');
-    card.className = 'deal-card';
-    card.innerHTML = `
-      <div><strong>${escapeHtml(row.client || '-')}</strong></div>
-      <div class="muted" style="margin-top:6px;">${escapeHtml((row.next_action || '상세 없음').slice(0, 40))}</div>
-    `;
-
-    card.addEventListener('click', () => {
-      document.getElementById('dealTitle').textContent = row.client || 'Untitled';
-      document.getElementById('dealBody').innerHTML = `
-        <div>카테고리: ${escapeHtml(row.category || '-')}</div>
-        <div style="margin-top:8px;">노트: ${escapeHtml(row.notes || '-')}</div>
-        <div style="margin-top:8px;">다음 액션: ${escapeHtml(row.next_action || '-')}</div>
-      `;
-      document.getElementById('dealModal').style.display = 'flex';
-    });
-
-    wrap.appendChild(card);
-  });
-}
-
-function closeDealModal() {
-  document.getElementById('dealModal').style.display = 'none';
-}
-window.closeDealModal = closeDealModal;
-
-function escapeHtml(str) {
-  return String(str ?? '')
+function esc(v) {
+  return String(v ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -245,72 +35,188 @@ function escapeHtml(str) {
     .replaceAll("'", '&#39;');
 }
 
-async function refreshDashboard() {
-  try {
-    const [{ inProgress, discussing }, { allTasks, openTasks }] = await Promise.all([
-      loadClients(),
-      loadTasks()
-    ]);
+function getDateParts(now = new Date()) {
+  const kst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const yyyy = kst.getFullYear();
+  const mm = String(kst.getMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getDate()).padStart(2, '0');
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const day = days[kst.getDay()];
 
-    renderProjects(inProgress);
-    renderTodos(openTasks, allTasks);
-    renderDeals(discussing);
-  } catch (e) {
-    console.error(e);
-  }
+  const hh = String(kst.getHours()).padStart(2, '0');
+  const mi = String(kst.getMinutes()).padStart(2, '0');
+  const ss = String(kst.getSeconds()).padStart(2, '0');
+
+  return {
+    dateText: `${yyyy}.${mm}.${dd} (${day})`,
+    clockText: `${hh}:${mi}:${ss} KST`
+  };
 }
 
-updateClock();
-refreshDashboard();
-setInterval(updateClock, 1000);
-setInterval(refreshDashboard, 30000);
+function updateClock() {
+  const { dateText, clockText } = getDateParts();
+  const dateEl = document.getElementById('date');
+  const clockEl = document.getElementById('clock');
+  if (dateEl) dateEl.textContent = dateText;
+  if (clockEl) clockEl.textContent = clockText;
+}
 
-// ===== Calendar Events (Supabase) =====
-async function loadCalendarEvents() {
-  try {
-    const listDiv = document.getElementById('schedules-list');
-    if (!listDiv) return; // 없으면 스킵
+async function loadAll() {
+  const [progressClients, discussingClients, allTasks] = await Promise.all([
+    sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EC%A7%84%ED%96%89%EC%A4%91&order=updated_at.desc.nullslast,client.asc'),
+    sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EB%85%BC%EC%9D%98%EC%A4%91&order=updated_at.desc.nullslast,client.asc'),
+    sbGet('tasks?select=id,task,status,assignee,due_date,created_at&order=created_at.desc&limit=500')
+  ]);
 
-    const response = await supabaseGet('events?order=start_time.asc&limit=20');
-    
-    if (!response || response.length === 0) {
-      listDiv.innerHTML = '<p style="color: #999;">일정이 없습니다</p>';
-      return;
-    }
-    
-    listDiv.innerHTML = response.map(event => {
-      const start = new Date(event.start_time);
-      const time = start.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
-      
+  renderProjects(progressClients);
+  renderTodos(allTasks);
+  renderDeals(discussingClients);
+}
+
+function renderProjects(rows) {
+  const body = document.getElementById('projectsBody');
+  if (!body) return;
+
+  if (!rows?.length) {
+    body.innerHTML = '<tr><td colspan="4">진행중 프로젝트가 없습니다.</td></tr>';
+    return;
+  }
+
+  const top20 = rows.slice(0, 20);
+  body.innerHTML = top20.map((row, idx) => {
+    const schedule = row.next_action || '-';
+    const service = row.notes || '-';
+    return `
+      <tr data-id="${row.id}">
+        <td>${idx + 1}</td>
+        <td><strong>${esc(row.client || '-')}</strong></td>
+        <td><input class="cell-input" data-role="next_action" value="${esc(schedule)}" /></td>
+        <td><input class="cell-input" data-role="notes" value="${esc(service)}" /></td>
+      </tr>
+    `;
+  }).join('');
+
+  body.querySelectorAll('tr').forEach((tr) => {
+    const id = tr.dataset.id;
+    const scheduleInput = tr.querySelector('[data-role="next_action"]');
+    const notesInput = tr.querySelector('[data-role="notes"]');
+
+    const save = async () => {
+      if (!id) return;
+      try {
+        await sbPatch(`clients?id=eq.${id}`, {
+          next_action: (scheduleInput.value || '').trim() || '-',
+          notes: (notesInput.value || '').trim() || '-',
+          updated_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('프로젝트 업데이트 실패:', err);
+      }
+    };
+
+    scheduleInput.addEventListener('change', save);
+    notesInput.addEventListener('change', save);
+  });
+}
+
+function renderTodos(tasks) {
+  const wrap = document.getElementById('todoGroups');
+  if (!wrap) return;
+
+  const grouped = {};
+  for (const t of tasks || []) {
+    const assignee = t.assignee || 'Unassigned';
+    if (!grouped[assignee]) grouped[assignee] = [];
+    grouped[assignee].push(t);
+  }
+
+  const assignees = Object.keys(grouped);
+  if (!assignees.length) {
+    wrap.innerHTML = '<div class="empty">할 일 없음 ✅</div>';
+    return;
+  }
+
+  wrap.innerHTML = assignees.map((name) => {
+    const arr = grouped[name];
+    const done = arr.filter((x) => (x.status || '').toLowerCase() === 'done').length;
+    const total = arr.length;
+    const rate = total ? Math.round((done / total) * 100) : 0;
+
+    const items = arr.map((t) => {
+      const isDone = (t.status || '').toLowerCase() === 'done';
       return `
-        <div style="padding: 10px; border-bottom: 1px solid #333;">
-          <div style="font-weight: bold;">${escapeHtml(event.summary || 'Untitled')}</div>
-          <div style="font-size: 0.9em; color: #999;">${time}</div>
-          ${event.meet_link ? `<a href="${escapeHtml(event.meet_link)}" target="_blank" style="color: #4a90e2;">📹 Meet 참여</a>` : ''}
-        </div>
+        <label class="todo-item ${isDone ? 'done' : ''}">
+          <input type="checkbox" data-task-id="${t.id}" ${isDone ? 'checked' : ''} />
+          <span>${esc(t.task || '(제목 없음)')}</span>
+        </label>
       `;
     }).join('');
-    
-    const errorDiv = document.getElementById('schedules-error');
-    if (errorDiv) errorDiv.textContent = '';
-  } catch (error) {
-    console.error('Calendar fetch error:', error);
-    const errorDiv = document.getElementById('schedules-error');
-    if (errorDiv) errorDiv.textContent = `오류: ${error.message}`;
-  } finally {
-    const loadingDiv = document.getElementById('schedules-loading');
-    if (loadingDiv) loadingDiv.style.display = 'none';
-  }
+
+    return `
+      <section class="todo-group" data-assignee="${esc(name)}">
+        <div class="todo-head">
+          <div class="todo-name">👤 ${esc(name)}</div>
+          <div class="todo-rate">${done}/${total}</div>
+        </div>
+        <div class="progress"><div class="progress-fill" style="width:${rate}%"></div></div>
+        ${items || '<div class="empty">할 일 없음 ✅</div>'}
+      </section>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('input[type="checkbox"][data-task-id]').forEach((cb) => {
+    cb.addEventListener('change', async (e) => {
+      const id = e.target.dataset.taskId;
+      const done = e.target.checked;
+      try {
+        await sbPatch(`tasks?id=eq.${id}`, { status: done ? 'Done' : 'Todo' });
+        await loadAll();
+      } catch (err) {
+        console.error('할 일 상태 변경 실패:', err);
+      }
+    });
+  });
 }
 
-// 초기 로드 때도 calendar 포함
-const originalRefresh = refreshDashboard;
-refreshDashboard = async function() {
-  await Promise.all([originalRefresh(), loadCalendarEvents()]);
-};
+function renderDeals(rows) {
+  const wrap = document.getElementById('dealList');
+  const badge = document.getElementById('dealCountBadge');
+  if (!wrap || !badge) return;
 
-// 30초마다 calendar도 새로고침
-setInterval(loadCalendarEvents, 30000);
+  const list = rows || [];
+  badge.textContent = String(list.length);
 
-// 페이지 로드 시 실행
-document.addEventListener('DOMContentLoaded', loadCalendarEvents);
+  if (!list.length) {
+    wrap.innerHTML = '<div class="empty">미확정 딜 없음</div>';
+    return;
+  }
+
+  wrap.innerHTML = list.map((r) => `
+    <article class="deal-card" data-id="${r.id}">
+      <div>🟡 ${esc(r.client || '-')}</div>
+      <div class="deal-tag">논의중</div>
+    </article>
+  `).join('');
+
+  wrap.querySelectorAll('.deal-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const row = list.find((x) => String(x.id) === card.dataset.id);
+      if (!row) return;
+      document.getElementById('dealModalTitle').textContent = row.client || 'Untitled';
+      document.getElementById('dealModalNextAction').textContent = `다음 액션: ${row.next_action || '-'}`;
+      document.getElementById('dealModalNotes').textContent = `노트: ${row.notes || '-'}`;
+      document.getElementById('dealModal').style.display = 'flex';
+    });
+  });
+}
+
+function closeDealModal() {
+  document.getElementById('dealModal').style.display = 'none';
+}
+
+window.closeDealModal = closeDealModal;
+
+updateClock();
+loadAll().catch((e) => console.error('초기 로드 실패:', e));
+setInterval(updateClock, 1000);
+setInterval(() => loadAll().catch((e) => console.error('주기 로드 실패:', e)), 30000);
