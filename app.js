@@ -26,6 +26,25 @@ async function sbPatch(path, body) {
   return res.json();
 }
 
+async function sbPost(path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'POST',
+    headers: sbHeaders(true),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function sbDelete(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'DELETE',
+    headers: sbHeaders(true)
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res.json();
+}
+
 function esc(v) {
   return String(v ?? '')
     .replaceAll('&', '&amp;')
@@ -84,7 +103,7 @@ async function loadAll() {
   const tomorrowRange = kstDateRange(1);
 
   const [projects, deals, tasks, todayEvents, tomorrowEvents] = await Promise.all([
-    sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EC%A7%84%ED%96%89%EC%A4%91&order=client.asc'),
+    sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EC%A7%84%ED%96%89%EC%A4%91&order=created_at.asc'),
     sbGet('clients?select=id,client,next_action,notes,category&category=eq.%EB%85%BC%EC%9D%98%EC%A4%91&order=client.asc'),
     sbGet('tasks?select=id,task,assignee,status,due_date&status=neq.Done&order=created_at.asc'),
     sbGet(`events?select=id,start_time,summary&start_time=gte.${todayRange.start}&start_time=lt.${todayRange.end}&order=start_time.asc`),
@@ -114,7 +133,7 @@ function renderTodos(tasks) {
   }
   wrap.innerHTML = assignees.map(name => {
     const arr = grouped[name];
-    const items = arr.map((t, i) => `
+    const items = arr.map((t) => `
       <div class="todo-item${t.status==='Done'?' done':''}">
         <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTodo('${t.id}',this)">
         <span>${esc(t.task||'-')}</span>
@@ -145,39 +164,115 @@ function renderProjects(rows) {
     return;
   }
 
-  body.innerHTML = rows.slice(0, 20).map((row, idx) => {
-    const baseDate = row.next_action || '-';
-    const service = row.notes || '-';
-    return `
-      <tr data-id="${row.id}">
-        <td>${idx + 1}</td>
-        <td><strong>${esc(row.client || '-')}</strong></td>
-        <td><input class="cell-input" data-role="next_action" value="${esc(baseDate)}" /></td>
-        <td><input class="cell-input" data-role="notes" value="${esc(service)}" /></td>
-      </tr>
-    `;
-  }).join('');
+  body.innerHTML = rows.map((row) => `
+    <tr data-id="${row.id}">
+      <td class="editable-cell" data-field="client">${esc(row.client || '')}</td>
+      <td class="editable-cell" data-field="next_action">${esc(row.next_action || '')}</td>
+      <td class="editable-cell" data-field="notes">${esc(row.notes || '')}</td>
+      <td><button class="delete-btn" data-action="delete" aria-label="삭제">🗑</button></td>
+    </tr>
+  `).join('');
 
-  body.querySelectorAll('tr').forEach((tr) => {
-    const id = tr.dataset.id;
-    const nextActionInput = tr.querySelector('[data-role="next_action"]');
-    const notesInput = tr.querySelector('[data-role="notes"]');
+  body.querySelectorAll('td.editable-cell').forEach((cell) => {
+    cell.addEventListener('click', () => activateInlineEditor(cell));
+  });
 
-    const save = async () => {
-      if (!id) return;
+  body.querySelectorAll('button[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tr = btn.closest('tr');
+      if (!tr?.dataset.id) return;
+      btn.disabled = true;
       try {
-        await sbPatch(`clients?id=eq.${id}`, {
-          next_action: (nextActionInput.value || '').trim() || '-',
-          notes: (notesInput.value || '').trim() || '-',
-          updated_at: new Date().toISOString()
-        });
+        await sbDelete(`clients?id=eq.${tr.dataset.id}`);
+        tr.remove();
+        if (!body.querySelector('tr')) {
+          body.innerHTML = '<tr><td colspan="4">진행중 프로젝트가 없습니다.</td></tr>';
+        }
       } catch (err) {
-        console.error('프로젝트 업데이트 실패:', err);
+        console.error('행 삭제 실패:', err);
+        btn.disabled = false;
       }
-    };
+    });
+  });
+}
 
-    nextActionInput.addEventListener('change', save);
-    notesInput.addEventListener('change', save);
+function activateInlineEditor(cell) {
+  if (!cell || cell.querySelector('.inline-editor')) return;
+
+  const field = cell.dataset.field;
+  const tr = cell.closest('tr');
+  const id = tr?.dataset.id;
+  if (!field || !id) return;
+
+  const original = cell.textContent ?? '';
+  const editor = field === 'notes' ? document.createElement('textarea') : document.createElement('input');
+  editor.className = 'inline-editor';
+  if (editor.tagName === 'INPUT') editor.type = 'text';
+  editor.value = original;
+
+  cell.textContent = '';
+  cell.appendChild(editor);
+  editor.focus();
+  editor.select();
+
+  let done = false;
+  const finish = async (save) => {
+    if (done) return;
+    done = true;
+
+    const nextValue = (editor.value || '').trim();
+
+    if (!save) {
+      cell.textContent = original;
+      return;
+    }
+
+    try {
+      await sbPatch(`clients?id=eq.${id}`, {
+        [field]: nextValue,
+        updated_at: new Date().toISOString()
+      });
+      cell.textContent = nextValue;
+    } catch (err) {
+      console.error('인라인 저장 실패:', err);
+      cell.textContent = original;
+    }
+  };
+
+  editor.addEventListener('blur', () => finish(true));
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !(editor.tagName === 'TEXTAREA' && e.shiftKey)) {
+      e.preventDefault();
+      editor.blur();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      finish(false);
+    }
+  });
+}
+
+function bindProjectAddButton() {
+  const addBtn = document.getElementById('addProjectBtn');
+  if (!addBtn || addBtn.dataset.bound === '1') return;
+
+  addBtn.dataset.bound = '1';
+  addBtn.addEventListener('click', async () => {
+    addBtn.disabled = true;
+    try {
+      await sbPost('clients', {
+        client: '',
+        next_action: '',
+        notes: '',
+        category: '진행중'
+      });
+      await loadAll();
+    } catch (err) {
+      console.error('프로젝트 추가 실패:', err);
+    } finally {
+      addBtn.disabled = false;
+    }
   });
 }
 
@@ -232,6 +327,7 @@ window.closeDealModal = closeDealModal;
 
 updateClock();
 updateScheduleTitles();
+bindProjectAddButton();
 loadAll().catch((e) => console.error('초기 로드 실패:', e));
 setInterval(updateClock, 1000);
 setInterval(() => {

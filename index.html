@@ -165,14 +165,55 @@
       vertical-align: middle;
     }
 
-    .cell-input {
+    .editable-cell {
+      cursor: text;
+    }
+
+    .editable-cell:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .inline-editor {
       width: 100%;
-      border: 1px solid #27274d;
+      border: 1px solid #2f2f58;
       border-radius: 6px;
       background: #111130;
       color: var(--text);
       padding: 4px 6px;
       font-size: 0.84rem;
+      font-family: inherit;
+    }
+
+    .delete-btn {
+      width: 100%;
+      border: 1px solid #3f2b40;
+      background: #2a141f;
+      color: #ffb8c5;
+      border-radius: 6px;
+      padding: 3px 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1.1;
+    }
+
+    .delete-btn:hover {
+      background: #3a1a2a;
+    }
+
+    .add-project-btn {
+      margin-top: 8px;
+      width: 100%;
+      border: 1px dashed #35507a;
+      background: #132038;
+      color: #b8d8ff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .add-project-btn:hover {
+      background: #17305a;
     }
 
     .deal-grid {
@@ -280,15 +321,16 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width:8%">#</th>
-                  <th style="width:26%">프로젝트명</th>
-                  <th style="width:17%">기준일</th>
+                  <th style="width:28%">프로젝트명</th>
+                  <th style="width:18%">기준일</th>
                   <th style="width:49%">서비스</th>
+                  <th style="width:5%"></th>
                 </tr>
               </thead>
               <tbody id="projectsBody"></tbody>
             </table>
           </div>
+          <button id="addProjectBtn" class="add-project-btn">+ 프로젝트 추가</button>
         </section>
 
         <!-- 좌하단: 미확정 딜 (8열) -->
