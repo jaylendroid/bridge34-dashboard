@@ -267,17 +267,35 @@
       background: #1a1a2e;
       border: 1px solid #2a2a4a;
       border-radius: 6px;
-      padding: 4px 6px;
+      padding: 3px 5px;
       font-size: 0.72rem;
       color: #e0e0f0;
       cursor: pointer;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      min-height: 24px;
+      position: relative;
+    }
+    .deal-card-name {
+      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      min-height: 24px;
     }
-
+    .deal-delete-btn {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+      visibility: hidden;
+    }
+    .deal-grid .deal-card:hover .deal-delete-btn { visibility: visible; }
     .deal-grid .deal-card:hover { background: #222244; }
 
     .schedule-list {
@@ -373,7 +391,7 @@
 
         <!-- 좌하단: 미확정 딜 (8열) -->
         <section class="panel panel-deals">
-          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
+          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span><button id="addDealBtn" class="add-project-btn" style="margin-left:8px">+ 딜 추가</button></div>
           <div id="dealList" class="deal-grid"></div>
         </section>
       </div>
@@ -400,13 +418,6 @@
     </main>
   </div>
 
-  <div id="dealModal" class="modal" onclick="if(event.target===this) closeDealModal()">
-    <div class="modal-content">
-      <div id="dealModalTitle" class="modal-title"></div>
-      <button class="modal-close" onclick="closeDealModal()">닫기</button>
-    </div>
-  </div>
-
-  <script src="app.js?v=ce7491d"></script>
+  <script src="app.js?v=deal-edit"></script>
 </body>
 </html>

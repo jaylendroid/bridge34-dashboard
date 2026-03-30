@@ -302,17 +302,73 @@ function renderDeals(rows) {
 
   wrap.innerHTML = list.map((r) => `
     <article class="deal-card" data-id="${r.id}">
-      ${esc(r.client || '-')}
+      <span class="deal-card-name">${esc(r.client || '-')}</span>
+      <button class="deal-delete-btn" data-action="delete" title="삭제">🗑</button>
     </article>
   `).join('');
 
+  // 이름 클릭 → 인라인 편집
   wrap.querySelectorAll('.deal-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const row = list.find((x) => String(x.id) === card.dataset.id);
-      if (!row) return;
-      document.getElementById('dealModalTitle').textContent = row.client || 'Untitled';
-      document.getElementById('dealModal').style.display = 'flex';
+    const nameSpan = card.querySelector('.deal-card-name');
+    nameSpan.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (card.querySelector('.deal-inline-input')) return;
+      const id = card.dataset.id;
+      const original = nameSpan.textContent;
+      const input = document.createElement('input');
+      input.className = 'deal-inline-input';
+      input.value = original;
+      input.style.cssText = 'width:100%;background:#111;color:#e0e0f0;border:1px solid #555;border-radius:3px;font-size:0.72rem;padding:1px 3px;';
+      nameSpan.textContent = '';
+      nameSpan.appendChild(input);
+      input.focus(); input.select();
+      let saved = false;
+      const save = async () => {
+        if (saved) return; saved = true;
+        const val = (input.value || '').trim();
+        if (val && val !== original) {
+          try {
+            await sbPatch(`clients?id=eq.${id}`, { client: val, updated_at: new Date().toISOString() });
+            nameSpan.textContent = val;
+          } catch { nameSpan.textContent = original; }
+        } else { nameSpan.textContent = original || val; }
+      };
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { saved = true; nameSpan.textContent = original; }
+      });
     });
+  });
+
+  // 삭제 버튼
+  wrap.querySelectorAll('.deal-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const card = btn.closest('.deal-card');
+      if (!card?.dataset.id) return;
+      btn.disabled = true;
+      try {
+        await sbDelete(`clients?id=eq.${card.dataset.id}`);
+        card.remove();
+        const remaining = wrap.querySelectorAll('.deal-card').length;
+        badge.textContent = String(remaining);
+        if (!remaining) wrap.innerHTML = '<div class="empty">미확정 딜 없음</div>';
+      } catch { btn.disabled = false; }
+    });
+  });
+}
+
+function bindDealAddButton() {
+  const btn = document.getElementById('addDealBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const name = prompt('딜 이름을 입력하세요');
+    if (!name?.trim()) return;
+    try {
+      await sbPost('clients', { client: name.trim(), category: '논의중' });
+      loadAll();
+    } catch (e) { alert('추가 실패: ' + e.message); }
   });
 }
 
@@ -330,15 +386,12 @@ function renderSchedule(events, panelId) {
   }).join('');
 }
 
-function closeDealModal() {
-  document.getElementById('dealModal').style.display = 'none';
-}
 
-window.closeDealModal = closeDealModal;
 
 updateClock();
 updateScheduleTitles();
 bindProjectAddButton();
+bindDealAddButton();
 loadAll().catch((e) => console.error('초기 로드 실패:', e));
 setInterval(updateClock, 1000);
 setInterval(() => {
