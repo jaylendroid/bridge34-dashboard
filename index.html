@@ -11,7 +11,6 @@
       --header-bg: #12122a;
       --text: #e0e0f0;
       --muted: #9a9ab4;
-      --accent: #ff6633;
       --line: #1e1e3a;
       --green: #00c97a;
       --yellow: #f5a623;
@@ -53,55 +52,65 @@
     .content {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0;
       height: calc(100vh - 60px);
       overflow: hidden;
     }
 
-    .panel {
-      background: var(--panel-bg);
-      overflow-y: auto;
-      padding: 16px 18px;
+    .left-col {
+      display: grid;
+      grid-template-rows: 4fr 1fr;
+      overflow: hidden;
       border-right: 1px solid var(--line);
       min-height: 0;
     }
 
-    .panel:last-child { border-right: none; }
-
-    /* 우측: To-Do + 미확정 딜 상하 분할 */
     .right-col {
       display: grid;
       grid-template-rows: 1fr 1fr;
       overflow: hidden;
-      border-left: 1px solid var(--line);
+      min-height: 0;
     }
 
-    .right-col .panel {
-      border-right: none;
+    .panel {
+      background: var(--panel-bg);
+      padding: 12px 14px;
+      min-height: 0;
+      overflow: hidden;
       border-bottom: 1px solid var(--line);
     }
 
-    .right-col .panel:last-child { border-bottom: none; }
+    .left-col .panel:last-child,
+    .right-col .panel:last-child {
+      border-bottom: none;
+    }
 
     .panel-title {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      font-size: 1.4rem;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 1.08rem;
       font-weight: 700;
+      min-height: 28px;
     }
 
     .badge {
-      font-size: 0.8rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 2px 8px;
       border-radius: 999px;
       color: #081117;
     }
 
     .badge.green { background: var(--green); }
     .badge.yellow { background: var(--yellow); color: #211400; }
+
+    .table-wrap {
+      overflow-y: auto;
+      height: calc(100% - 40px);
+      border: 1px solid #1a1a2e;
+      border-radius: 8px;
+    }
 
     table {
       width: 100%;
@@ -125,15 +134,10 @@
     tbody td {
       border-bottom: 1px solid #181832;
       padding: 6px 8px;
-      vertical-align: middle;
       font-size: 0.9rem;
       line-height: 1.2;
       word-break: break-word;
-    }
-
-    .table-wrap {
-      overflow-y: auto;
-      max-height: calc(100vh - 120px);
+      vertical-align: middle;
     }
 
     .cell-input {
@@ -143,85 +147,68 @@
       background: #111130;
       color: var(--text);
       padding: 4px 6px;
+      font-size: 0.84rem;
+    }
+
+    .deal-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+      align-content: start;
+      height: calc(100% - 40px);
+      overflow: hidden;
+    }
+
+    .deal-grid .deal-card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 0.72rem;
+      color: #e0e0f0;
+      cursor: pointer;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-height: 24px;
+    }
+
+    .deal-grid .deal-card:hover { background: #222244; }
+
+    .schedule-list {
+      overflow-y: auto;
+      height: calc(100% - 40px);
+      border: 1px solid #1a1a2e;
+      border-radius: 8px;
+      padding: 2px 6px;
+    }
+
+    .schedule-item {
+      display: flex;
+      gap: 10px;
+      padding: 6px 4px;
+      border-bottom: 1px solid #1a1a2e;
       font-size: 0.88rem;
     }
 
-    .todo-groups {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .schedule-item:last-child { border-bottom: none; }
+
+    .sch-time {
+      color: #ff6633;
+      font-weight: 700;
+      min-width: 40px;
+      font-family: monospace;
     }
 
-    .todo-group {
-      border: 1px solid #242447;
-      border-radius: 10px;
-      padding: 10px;
-      background: #12122d;
-    }
-
-    .todo-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .todo-name { font-weight: 700; font-size: 1.05rem; }
-    .todo-rate { color: var(--muted); font-size: 0.9rem; }
-
-    .progress {
-      width: 100%;
-      height: 8px;
-      border-radius: 999px;
-      background: #23234a;
+    .sch-title {
+      color: #e0e0f0;
       overflow: hidden;
-      margin-bottom: 8px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ff6633, #00c97a);
-    }
-
-    .todo-item {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-      font-size: 1.0rem;
-      margin: 4px 0;
-    }
-
-    .todo-item.done {
-      opacity: 0.45;
-      text-decoration: line-through;
-    }
-
-    .empty { color: var(--muted); font-size: 1rem; padding: 8px 2px; }
-
-    .deal-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-    }
-
-    .deal-card {
-      border: 1px solid #373022;
-      background: #1a1620;
-      border-radius: 10px;
-      padding: 10px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-      font-size: 0.95rem;
-      min-height: 72px;
-    }
-
-    .deal-title { font-weight: 700; }
-
-    .deal-tag {
-      font-size: 0.78rem;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: #2b2440;
-      color: #c9bdf3;
-      font-weight: 600;
-    }
+    .empty { color: var(--muted); font-size: 0.92rem; padding: 8px 4px; }
 
     .modal {
       position: fixed;
@@ -233,21 +220,21 @@
     }
 
     .modal-content {
-      width: min(560px, 92vw);
+      width: min(420px, 90vw);
       background: #12122d;
       border: 1px solid #30305a;
       border-radius: 12px;
       padding: 16px;
+      text-align: center;
     }
 
-    .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; }
-    .modal-row { margin: 8px 0; color: #d7d7e8; }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; }
+
     .modal-close {
-      margin-top: 12px;
       border: 1px solid #3d3d70;
       background: #19193a;
       color: var(--text);
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 8px;
       cursor: pointer;
     }
@@ -257,35 +244,43 @@
   <div class="wrapper">
     <header class="header">
       <div class="logo">Bridge34 Office Board</div>
-      <div class="header-right" id="headerRight">--:--:-- / Asia/Seoul · 자동 새로고침 30초</div>
+      <div class="header-right" id="headerRight">--:--:-- KST ↻ 30s</div>
     </header>
 
     <main class="content">
-      <section class="panel">
-        <div class="panel-title">📋 협업 프로젝트 현황 [진행중]</div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 34%">프로젝트명</th>
-                <th style="width: 17%">기준일</th>
-                <th style="width: 49%">서비스</th>
-              </tr>
-            </thead>
-            <tbody id="projectsBody"></tbody>
-          </table>
-        </div>
-      </section>
+      <div class="left-col">
+        <section class="panel panel-projects">
+          <div class="panel-title">📋 협업 프로젝트 현황 <span class="badge green">진행중</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:8%">#</th>
+                  <th style="width:26%">프로젝트명</th>
+                  <th style="width:17%">기준일</th>
+                  <th style="width:49%">서비스</th>
+                </tr>
+              </thead>
+              <tbody id="projectsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel panel-deals">
+          <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span></div>
+          <div id="dealList" class="deal-grid"></div>
+        </section>
+      </div>
 
       <div class="right-col">
         <section class="panel">
-          <div class="panel-title">👤 직원별 To-Do</div>
-          <div id="todoGroups" class="todo-groups"></div>
+          <div class="panel-title" id="todayTitle">📅 오늘</div>
+          <div id="todayList" class="schedule-list"></div>
         </section>
 
         <section class="panel">
-          <div class="panel-title">🤝 미확정 딜 [논의중] <span class="badge yellow" id="dealCountBadge">0</span></div>
-          <div id="dealList" class="deal-list"></div>
+          <div class="panel-title" id="tomorrowTitle">📅 내일</div>
+          <div id="tomorrowList" class="schedule-list"></div>
         </section>
       </div>
     </main>
@@ -294,8 +289,6 @@
   <div id="dealModal" class="modal" onclick="if(event.target===this) closeDealModal()">
     <div class="modal-content">
       <div id="dealModalTitle" class="modal-title"></div>
-      <div class="modal-row" id="dealModalNextAction"></div>
-      <div class="modal-row" id="dealModalNotes"></div>
       <button class="modal-close" onclick="closeDealModal()">닫기</button>
     </div>
   </div>
