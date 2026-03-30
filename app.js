@@ -125,24 +125,26 @@ async function loadAll() {
   renderSchedule(tomorrowEvents, 'tomorrowList');
 }
 
+// 6명 고정 순서
+const ALL_MEMBERS = ['Jaylen', 'Ben', 'Sylvie', '불개미', 'Stanley', '기타'];
+const MEMBER_EMOJI = { 'Jaylen':'👤', 'Ben':'👤', 'Sylvie':'👤', '불개미':'👤', 'Stanley':'👤', '기타':'👤' };
+
 function renderTodos(tasks) {
   const wrap = document.getElementById('todoGroups');
   if (!wrap) return;
+  // 담당자별 그룹핑
   const grouped = {};
   for (const t of tasks || []) {
     const raw = t.assignee || 'Unassigned';
     const a = ASSIGNEE_DISPLAY[raw] || raw;
-    if (!grouped[a]) grouped[a] = [];
-    grouped[a].push(t);
-  }
-  const assignees = Object.keys(grouped);
-  if (!assignees.length) {
-    wrap.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px">할일 없음</div>';
-    return;
+    const slot = ALL_MEMBERS.includes(a) ? a : '기타';
+    if (!grouped[slot]) grouped[slot] = [];
+    grouped[slot].push(t);
   }
   const MAX_SHOW = 5;
-  wrap.innerHTML = assignees.map(name => {
-    const arr = grouped[name];
+  // 6명 슬롯 고정 순서로 렌더링
+  wrap.innerHTML = ALL_MEMBERS.map(name => {
+    const arr = grouped[name] || [];
     const visible = arr.slice(0, MAX_SHOW);
     const extra = arr.length - MAX_SHOW;
     const items = visible.map(t => `
@@ -151,12 +153,13 @@ function renderTodos(tasks) {
         <span>${esc(t.task||'-')}</span>
       </div>`).join('');
     const more = extra > 0 ? `<div class="todo-more">+${extra}개 더</div>` : '';
+    const emptyMsg = arr.length === 0 ? '<div class="todo-more">할일 없음 ✓</div>' : '';
     return `<div class="todo-group">
       <div class="todo-head">
         <span class="todo-name">👤 ${esc(name)}</span>
         <span class="todo-rate">${arr.length}건</span>
       </div>
-      ${items}${more}
+      ${items}${more}${emptyMsg}
     </div>`;
   }).join('');
 }
