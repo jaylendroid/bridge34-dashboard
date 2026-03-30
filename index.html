@@ -179,28 +179,32 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 0.9rem;
+      font-size: 0.78rem;
     }
 
     thead th {
       text-align: left;
       color: var(--muted);
       border-bottom: 1px solid var(--line);
-      padding: 6px 8px;
+      padding: 4px 8px;
       position: sticky;
       top: 0;
       background: var(--panel-bg);
       z-index: 1;
       font-weight: 700;
+      font-size: 0.78rem;
     }
 
     tbody td {
       border-bottom: 1px solid #181832;
-      padding: 6px 8px;
-      font-size: 0.9rem;
+      padding: 3px 8px;
+      font-size: 0.78rem;
       line-height: 1.2;
       word-break: break-word;
       vertical-align: middle;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .editable-cell {

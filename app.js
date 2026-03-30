@@ -217,9 +217,9 @@ function activateInlineEditor(cell) {
   if (!field || !id) return;
 
   const original = cell.textContent ?? '';
-  const editor = field === 'notes' ? document.createElement('textarea') : document.createElement('input');
+  const editor = document.createElement('input');
   editor.className = 'inline-editor';
-  if (editor.tagName === 'INPUT') editor.type = 'text';
+  editor.type = 'text';
   editor.value = original;
 
   cell.textContent = '';
@@ -253,7 +253,7 @@ function activateInlineEditor(cell) {
 
   editor.addEventListener('blur', () => finish(true));
   editor.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !(editor.tagName === 'TEXTAREA' && e.shiftKey)) {
+    if (e.key === 'Enter') {
       e.preventDefault();
       editor.blur();
     }
@@ -273,12 +273,20 @@ function bindProjectAddButton() {
     addBtn.disabled = true;
     try {
       await sbPost('clients', {
-        client: '',
+        client: '새 프로젝트',
         next_action: '',
         notes: '',
         category: '진행중'
       });
       await loadAll();
+      // 마지막 행 첫 번째 셀 자동 포커스
+      const body = document.getElementById('projectsBody');
+      const lastRow = body?.querySelector('tr:last-child');
+      const firstCell = lastRow?.querySelector('td.editable-cell');
+      if (firstCell) {
+        firstCell.scrollIntoView({ block: 'nearest' });
+        activateInlineEditor(firstCell);
+      }
     } catch (err) {
       console.error('프로젝트 추가 실패:', err);
     } finally {
