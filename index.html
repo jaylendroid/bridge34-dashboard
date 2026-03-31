@@ -60,7 +60,7 @@
 
     .left-col {
       display: grid;
-      grid-template-rows: 4fr 1fr;
+      grid-template-rows: 1fr 1fr;
       overflow: hidden;
       border-right: 1px solid var(--line);
       min-height: 0;
@@ -68,7 +68,7 @@
 
     .right-col {
       display: grid;
-      grid-template-rows: 1fr 1fr;
+      grid-template-rows: 4fr 1fr;
       overflow: hidden;
       min-height: 0;
     }
@@ -378,6 +378,26 @@
 
     <main class="content">
       <div class="left-col">
+        <!-- 좌상단: 직원별 To-Do -->
+        <section class="panel">
+          <div class="panel-title">👤 직원별 To-Do</div>
+          <div id="todoGroups" class="todo-groups"></div>
+        </section>
+
+        <!-- 좌하단: 오늘/내일 일정 좌우 분할 -->
+        <div class="bottom-schedule">
+          <section class="panel">
+            <div class="panel-title" id="todayTitle">📅 오늘</div>
+            <div id="todayList" class="schedule-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-title" id="tomorrowTitle">📅 내일</div>
+            <div id="tomorrowList" class="schedule-list"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="right-col">
         <section class="panel panel-projects">
           <div class="panel-title">📋 협업 프로젝트 현황 <span class="badge green">진행중</span><button id="addProjectBtn" style="margin-left:10px;background:#1a3050;border:1px solid #6699cc;color:#fff;border-radius:6px;padding:3px 10px;font-size:0.78rem;font-weight:700;cursor:pointer;line-height:1.4;">+ 프로젝트 추가</button></div>
           <div class="table-wrap">
@@ -396,31 +416,11 @@
 
         </section>
 
-        <!-- 좌하단: 미확정 딜 (8열) -->
+        <!-- 우하단: 미확정 딜 -->
         <section class="panel panel-deals">
           <div class="panel-title">🤝 미확정 딜 <span class="badge yellow" id="dealCountBadge">0</span><button id="addDealBtn" class="add-project-btn" style="margin-left:8px">+ 딜 추가</button></div>
           <div id="dealList" class="deal-grid"></div>
         </section>
-      </div>
-
-      <div class="right-col">
-        <!-- 우상단: 직원별 To-Do -->
-        <section class="panel">
-          <div class="panel-title">👤 직원별 To-Do</div>
-          <div id="todoGroups" class="todo-groups"></div>
-        </section>
-
-        <!-- 우하단: 오늘/내일 일정 좌우 분할 -->
-        <div class="bottom-schedule">
-          <section class="panel">
-            <div class="panel-title" id="todayTitle">📅 오늘</div>
-            <div id="todayList" class="schedule-list"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-title" id="tomorrowTitle">📅 내일</div>
-            <div id="tomorrowList" class="schedule-list"></div>
-          </section>
-        </div>
       </div>
     </main>
   </div>
