@@ -406,3 +406,213 @@ setInterval(() => {
   updateScheduleTitles();
   loadAll().catch((e) => console.error('주기 로드 실패:', e));
 }, 30000);
+
+// ─────────────────────────────────────────
+// Client Map 사이드패널
+// ─────────────────────────────────────────
+
+let cpCurrentClient = null;
+let cpCurrentTab = 'meetings';
+
+function openClientPanel(clientName) {
+  cpCurrentClient = clientName;
+  document.getElementById('cpClientName').textContent = clientName;
+  document.getElementById('clientPanel').classList.add('open');
+  document.getElementById('cpOverlay').classList.add('open');
+  switchCpTab('meetings');
+}
+
+function closeClientPanel() {
+  document.getElementById('clientPanel').classList.remove('open');
+  document.getElementById('cpOverlay').classList.remove('open');
+  cpCurrentClient = null;
+  hideCpForm('meeting');
+  hideCpForm('contact');
+  hideCpForm('deal');
+}
+
+function switchCpTab(tab) {
+  cpCurrentTab = tab;
+  document.querySelectorAll('.cp-tab').forEach((t, i) => {
+    const tabs = ['meetings', 'contacts', 'deals'];
+    t.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.cp-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`cp-${tab}`).classList.add('active');
+
+  if (!cpCurrentClient) return;
+  if (tab === 'meetings') loadCpMeetings(cpCurrentClient);
+  if (tab === 'contacts') loadCpContacts(cpCurrentClient);
+  if (tab === 'deals') loadCpDeals(cpCurrentClient);
+}
+
+function showCpForm(type) {
+  const formId = { meeting: 'meetingForm', contact: 'contactForm', deal: 'dealForm' }[type];
+  document.getElementById(formId).style.display = 'block';
+  // 날짜 기본값
+  if (type === 'meeting') {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('mf-date').value = today;
+  }
+}
+
+function hideCpForm(type) {
+  const formId = { meeting: 'meetingForm', contact: 'contactForm', deal: 'dealForm' }[type];
+  const form = document.getElementById(formId);
+  if (form) {
+    form.style.display = 'none';
+    form.querySelectorAll('input, textarea').forEach(el => el.value = '');
+    const sel = form.querySelector('select');
+    if (sel) sel.value = '논의중';
+  }
+}
+
+// 미팅 일지
+async function loadCpMeetings(clientName) {
+  const list = document.getElementById('meetingsList');
+  list.innerHTML = '<div class="cp-loading">로딩중...</div>';
+  try {
+    const rows = await sbGet(`meetings?client_name=eq.${encodeURIComponent(clientName)}&order=meeting_date.desc`);
+    if (!rows?.length) {
+      list.innerHTML = '<div class="cp-empty">미팅 일지가 없어요.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(r => `
+      <div class="cp-card" data-id="${r.id}">
+        <div class="cp-card-header">
+          <span class="cp-card-title">${esc(r.meeting_date)}</span>
+          <button class="cp-card-delete" onclick="deleteCpRow('meetings','${r.id}','meetings')">🗑</button>
+        </div>
+        ${r.attendees ? `<div class="cp-card-label">👥 ${esc(r.attendees)}</div>` : ''}
+        ${r.summary ? `<div class="cp-card-body" style="margin-top:6px">${esc(r.summary)}</div>` : ''}
+        ${r.next_action ? `<div class="cp-card-label" style="margin-top:6px">→ ${esc(r.next_action)}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="cp-empty">로드 실패</div>';
+  }
+}
+
+async function submitMeeting() {
+  if (!cpCurrentClient) return;
+  const date = document.getElementById('mf-date').value;
+  if (!date) { alert('날짜를 입력하세요.'); return; }
+  const data = {
+    client_name: cpCurrentClient,
+    meeting_date: date,
+    attendees: document.getElementById('mf-attendees').value || null,
+    summary: document.getElementById('mf-summary').value || null,
+    next_action: document.getElementById('mf-next').value || null,
+  };
+  await sbPost('meetings', data);
+  hideCpForm('meeting');
+  loadCpMeetings(cpCurrentClient);
+}
+
+// 컨택
+async function loadCpContacts(clientName) {
+  const list = document.getElementById('contactsList');
+  list.innerHTML = '<div class="cp-loading">로딩중...</div>';
+  try {
+    const rows = await sbGet(`contacts?client_name=eq.${encodeURIComponent(clientName)}&order=created_at.asc`);
+    if (!rows?.length) {
+      list.innerHTML = '<div class="cp-empty">등록된 컨택이 없어요.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(r => `
+      <div class="cp-card" data-id="${r.id}">
+        <div class="cp-card-header">
+          <span class="cp-card-title">${esc(r.name)}${r.role ? ` <span style="font-weight:400;font-size:0.8rem;color:#9a9ab4">${esc(r.role)}</span>` : ''}</span>
+          <button class="cp-card-delete" onclick="deleteCpRow('contacts','${r.id}','contacts')">🗑</button>
+        </div>
+        ${r.telegram ? `<div class="cp-card-label">✈️ ${esc(r.telegram)}</div>` : ''}
+        ${r.email ? `<div class="cp-card-label">✉️ ${esc(r.email)}</div>` : ''}
+        ${r.notes ? `<div class="cp-card-body" style="margin-top:6px">${esc(r.notes)}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="cp-empty">로드 실패</div>';
+  }
+}
+
+async function submitContact() {
+  if (!cpCurrentClient) return;
+  const name = document.getElementById('cf-name').value.trim();
+  if (!name) { alert('이름을 입력하세요.'); return; }
+  const data = {
+    client_name: cpCurrentClient,
+    name,
+    role: document.getElementById('cf-role').value || null,
+    telegram: document.getElementById('cf-telegram').value || null,
+    email: document.getElementById('cf-email').value || null,
+    notes: document.getElementById('cf-notes').value || null,
+  };
+  await sbPost('contacts', data);
+  hideCpForm('contact');
+  loadCpContacts(cpCurrentClient);
+}
+
+// 딜
+async function loadCpDeals(clientName) {
+  const list = document.getElementById('dealsList');
+  list.innerHTML = '<div class="cp-loading">로딩중...</div>';
+  try {
+    const rows = await sbGet(`client_deals?client_name=eq.${encodeURIComponent(clientName)}&order=created_at.desc`);
+    if (!rows?.length) {
+      list.innerHTML = '<div class="cp-empty">등록된 딜이 없어요.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(r => `
+      <div class="cp-card" data-id="${r.id}">
+        <div class="cp-card-header">
+          <span class="cp-card-title">${esc(r.deal_title || '무제')}
+            <span class="cp-status ${r.status || '논의중'}">${esc(r.status || '논의중')}</span>
+          </span>
+          <button class="cp-card-delete" onclick="deleteCpRow('client_deals','${r.id}','deals')">🗑</button>
+        </div>
+        ${r.amount ? `<div class="cp-card-label">💰 ${esc(r.amount)}</div>` : ''}
+        ${r.structure ? `<div class="cp-card-body" style="margin-top:6px">${esc(r.structure)}</div>` : ''}
+        ${r.notes ? `<div class="cp-card-label" style="margin-top:6px">📝 ${esc(r.notes)}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="cp-empty">로드 실패</div>';
+  }
+}
+
+async function submitDeal() {
+  if (!cpCurrentClient) return;
+  const title = document.getElementById('df-title').value.trim();
+  if (!title) { alert('딜 제목을 입력하세요.'); return; }
+  const data = {
+    client_name: cpCurrentClient,
+    deal_title: title,
+    amount: document.getElementById('df-amount').value || null,
+    status: document.getElementById('df-status').value,
+    structure: document.getElementById('df-structure').value || null,
+    notes: document.getElementById('df-notes').value || null,
+  };
+  await sbPost('client_deals', data);
+  hideCpForm('deal');
+  loadCpDeals(cpCurrentClient);
+}
+
+async function deleteCpRow(table, id, tab) {
+  if (!confirm('삭제할까요?')) return;
+  await sbDelete(`${table}?id=eq.${id}`);
+  if (tab === 'meetings') loadCpMeetings(cpCurrentClient);
+  if (tab === 'contacts') loadCpContacts(cpCurrentClient);
+  if (tab === 'deals') loadCpDeals(cpCurrentClient);
+}
+
+// 프로젝트 행 클릭 → 사이드패널 열기
+document.getElementById('projectsBody')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (btn) return; // 버튼 클릭은 무시
+  const cell = e.target.closest('.editable-cell');
+  if (cell) return; // 편집셀 클릭도 무시
+  const tr = e.target.closest('tr[data-id]');
+  if (!tr) return;
+  const clientName = tr.querySelector('td.editable-cell[data-field="client"]')?.textContent?.trim();
+  if (clientName) openClientPanel(clientName);
+});
