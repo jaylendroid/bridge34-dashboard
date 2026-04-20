@@ -2,44 +2,34 @@ name: Sync Google Calendar to Supabase
 
 on:
   schedule:
-    # UTC 기준 매 시간 00분에 실행
-    # 한국시간(UTC+9)으로는 9시간 뒤
-    - cron: '0 * * * *'
-  
-  # 수동 실행 가능
+    # 매일 KST 새벽 2시 (UTC 17:00 전날) + 오전 9시 (UTC 00:00) + 정오 (UTC 03:00) + 오후 6시 (UTC 09:00)
+    - cron: '0 17 * * *'
+    - cron: '0 0 * * *'
+    - cron: '0 3 * * *'
+    - cron: '0 9 * * *'
   workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      
-      - name: Install gog CLI
-        run: npm install -g gog
-      
+          node-version: '20'
+
       - name: Install dependencies
         run: npm install
-      
-      - name: Configure gog auth
-        run: |
-          # GitHub Actions의 기본 인증을 사용
-          # (로컬 gog auth는 GitHub Actions에서 자동으로 사용됨)
-          gog auth list
-      
-      - name: Run sync script
-        run: node scripts/sync-calendar.js
+
+      - name: Run calendar sync
+        run: node scripts/sync-calendar-oauth.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
-      
-      - name: Log sync completion
-        if: always()
-        run: echo "Calendar sync completed at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
